@@ -1,6 +1,6 @@
 'PROGRAM: zimpact.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 4.6
+' CAM version 5.0
 '
 ' subroutine to generate a dynamic multiplier report
 '
@@ -13,21 +13,26 @@
 '---------------------------------------------------------------
 
 '==============================================================
-'variable type definitions (see LoadVarTypes)
+'variable type definitions
+'   A  aggregate: diff = ys-y0, %diff = 100*(ys/y0-1)
+'   B  balance: diff = ys-y0, %diff = 100*(ys-y0)/GDP
+'   G  growth or inflation rate: %diff = ys-y0
+'   I  index: %diff = 100*(ys/y0-1)
+'   R  ratio: %diff = 100*(ys-y0) or %diff = 100*(ys-y0)/ref
 '
 'variables not listed are assumed to be type A
 '
 '---------------------------------------------------------------
-%tbvar = "(B) BA$,BE$,BM$,BS$,BIT$," _
-  + "CA$,C,G,IP,IV,LG,NFF$,NGF$,NLP,NLG,NX$,NXF$,SP,TB$,YG;" _
-  + "(G) is,im,irs,irm,pvi,pi,rxna;" _
-  + "(I) ED,EP,NER,NE,pkp,rxu,rx,tt;" _
+%tvar = "(B) BA$,BE$,BM$,BS$,BIT$,TB$,CA$,IV," _
+    + "BA0U,NLG,NFF$,NGF$,NLP,NLG,NX$,NXF$,SP;" _
+  + "(G) is,im,irs,irm,NUL,NULVF,NULVM,NULYF,NULYM,VVPRV," _
+    + "NLNVF,NLNVM,NLNYF,NLNYM,ei,mu,rtx,pvi,pi,pi$,rxna;" _
+  + "(I) CO2,ED,EP,NER,NE,NEF,NEM,NEVF,NEVM,NEYF,NEYM,NL,mu," _
+    + "NEA,NEAF,NEAM,VGA,NNE,GCY,VVAE,VNE," _
+    + "VV,VVA,VVE,VVI,VVS,VVEM,VVEME,VVPR,VVTX," _
+    + "pa,pa$,pe,pe$,ph,pkp,rtx,rxu,rx,rxd,tt;" _
   + "(R) NIMU(N population)," _
       + "NIM(NE employment),sxm,wln"
-
-%twvar = "(B) C_W,G_W,IP_W,IV_W,LG_W,SP_W,YG_W;" _
-  + "(G) pi_w,pi$_w;" _
-  + "(I) NE_W,pa_w,pa$_w,pe_w,pe$_w,ph_w"
 
 subroutine pShockImpact(string %tlImpact, scalar qFull, _
   scalar qGraph)
@@ -45,13 +50,10 @@ subroutine pShockImpact(string %tlImpact, scalar qFull, _
 '---------------------------------------------------------------
 
 '--- load variable type definitions
-if not @isobject("t_BVType") then
-  table t_BVType
-  scalar nBVType = 0
-  call zLoadVarTypes(%tbvar, t_BVType, nBVType)
-  table t_WVType
-  scalar nWVType = 0
-  call zLoadVarTypes(%twvar, t_WVType, nWVType)
+if not @isobject("t_VType") then
+  table t_VType
+  scalar nVType = 0
+  call zLoadVarTypes(%tvar, t_VType, nVType)
 endif
 
 '--- shocked var and probability level
@@ -228,7 +230,7 @@ while %vn <> ""
     if !i > 0 then
       %bref = "_" + @mid(%var, !i+1)
     else
-      %bref = "W"
+      %bref = ""
     endif
     if %vref <> "" then %vref = %vref + %bref endif
     
@@ -319,7 +321,7 @@ subroutine local zSummaryImpact(string %Shockvar, _
   string %Shockref, string %Shocknam, string %tlImpact, _
   string %Title, string %Pr, table tRes, scalar nRes, _
   string %Alias, string %Compare, string %Actual, _
-  string %Predict, table tBloc, scalar nBloc)
+  string %Predict, table tBloc , scalar nBloc)
 '==============================================================
 'write table describing scenario results
 '
@@ -394,12 +396,14 @@ endif
 vector(4) vr
 for !isec = !isec0 to 2
   if !isec = 1 then
-    %s = "$m change in each variable per $1b increase in " _
-      + %sbn + " " + %Shocknam
+    %s = "$m change in each variable " _
+      + "after an initial increase in " _
+      + %sbn + " " + %Shocknam + " by $1b"
   else
     !ir = !ir + 1
-    %s = "per cent change in each variable per 1" + %spc _
-      + " increase in " + %sbn + " " + %Shocknam
+    %s = "per cent change in each variable " _
+      + "after an initial increase in " _
+      + %sbn + " " + %Shocknam + " by 1 " + %spc 
   endif
   !ir = !ir + 1
   setcell(tRes, !ir, 1, %s, "l")
@@ -424,12 +428,12 @@ for !isec = !isec0 to 2
     !vsdiff = vr(4)
   endif
   '--- impact lines
-  %tl = %tlImpact
+  %tl = @trim(%tlImpact)
   %b0 = "-"
   %var0 = "-"
   !qofwhich = 0
-  call Token(%tl, ";", %varn)
-  while %varn <> ""
+  while %tl <> ""
+    call Token(%tl, ";", %varn)
     call Token(%varn, ":", %ivar)
     call zVarType(%ivar, %type, %pc, %vref)
     '--- multiplier or elasticity is available
@@ -438,16 +442,10 @@ for !isec = !isec0 to 2
         or (!isec = 2 and @instr("AB", %type) = 0) then
       !ir = !ir + 1
       '--- determine the variable and bloc ref
-      %b = %ivar
+      %b = @upper(%ivar)
       call Token(%b, "_", %var)
-      if %b = "" then
-        %b = "W"
-        %bref = "W"
-      else
-        %b = @upper(%b)
-        %bref = "_" + %b
-        call BlocName(%b, %bn)
-      endif
+      %bref = "_" + %b
+      call BlocName(%b, %bn)
       '--- world impacts
       if %b = "W" then
         if %b <> %b0 then
@@ -540,7 +538,6 @@ for !isec = !isec0 to 2
         setcell(tRes, !ir, !j+2, %s, "r")
       next
     endif
-    call Token(%tl, ";", %varn)
   wend
 next
 nRes = !ir
@@ -634,27 +631,23 @@ subroutine zVarType(string %Var, string %Type, string %PerCent, _
 !lib_i = @instr(%Var, "_")
 if !lib_i > 0 then
   %lib_v = @left(%Var, !lib_i-1)
-  for !lib_i = 1 to nBVType
-    if t_BVType(!lib_i, 1) = @upper(%lib_v) then
-      %Type = t_BVType(!lib_i, 2)
-      %lib_r = t_BVType(!lib_i, 3)
-      exitloop
-    endif  
-  next
-else
-  for !lib_i = 1 to nWVType
-    if t_WVType(!lib_i, 1) = @upper(%Var) then
-      %Type = t_WVType(!lib_i, 2)
-      %lib_r = t_WVType(!lib_i, 3)
+  for !lib_i = 1 to nVType
+    if t_VType(!lib_i, 1) = @upper(%lib_v) then
+      %Type = t_VType(!lib_i, 2)
+      %lib_r = t_VType(!lib_i, 3)
       exitloop
     endif  
   next
 endif
 if %type = "B" then
   %PerCent = "% of GDP"
-  %Ref = "V"
+  if @instr(%Var, "0") > 0 then
+    %Ref = "V0"
+  else
+    %Ref = "V"
+  endif  
 else if %type = "G" then
-  %PerCent = "% p.a."
+  %PerCent = "per cent"
 else if %type = "R" and %lib_r <> "" then
   call Token(%lib_r, " ", %Ref)
   %PerCent = "% of " + %lib_r
@@ -686,7 +679,7 @@ subroutine local zLoadVarTypes(string %List, table t, scalar n)
 ' The following type codes are defined for use in presenting
 ' results of shock simulations
 '   A  aggregate: diff = ys-y0, %diff = 100*(ys/y0-1)
-'   B  balance: diff = ys - y0, %diff = 100*(ys-y0)/GDP
+'   B  balance: diff = ys-y0, %diff = 100*(ys-y0)/GDP
 '   G  growth or inflation rate: %diff = ys-y0
 '   I  index: %diff = 100*(ys/y0-1)
 '   R  ratio: %diff = 100*(ys-y0), %diff = 100*(ys-y0)/ref
@@ -797,10 +790,10 @@ subroutine local zDiff(string %Var, string %Type, string %Alias, _
 '---------------------------------------------------------------
 !qfnd = 0
 !v = 0
-!v1 = 0
-'--- scenario and baseline values
+'--- name of shocked variable
 call ScenarioExpr(%Var, %Alias, %v)
-'--- endogenous variable with alias
+'--- if the variable exists with shock alias get its shocked
+'    value vr(1) and baseline value vr(2)
 call Exists(%v, !qfnd)
 if !qfnd then
   call Eval(%v, %Year, !v)
@@ -808,7 +801,9 @@ if !qfnd then
   call ScenarioExpr(%Var, %Comp, %v)
   call Eval(%v, %Year, !v)    
   vr(2) = !v
-'--- exogenous variable (no alias)  
+'--- if the shocked variable does not exist with alias
+'    get the actual value of the variable or related _ins
+'    actual in vr(1) and actual minus shock in vr(2)
 else
   '--- check use of suffix ins
   %v = %Var + "_ins"
@@ -833,7 +828,7 @@ subroutine local zSDiff(string %Var, string %Type, _
 '
 ' Call: %Var    variable
 '       %Type   variable type
-'       %Comp   alias for baseline values
+'       %Comp   alias for reference
 '       %Ref    reference variable for type B
 '                this will be bloc or world GDP
 '       vExa    size of ex ante shock or na
@@ -841,28 +836,13 @@ subroutine local zSDiff(string %Var, string %Type, _
 '
 ' Ret:  vr      differences vector
 '                 column 1 shocked value
-'                 column 2 baseline value
+'                 column 2 actual value
 '                 column 3 difference
 '                 column 4 % difference
 '
 '---------------------------------------------------------------
-!qfnd = 0
 !v = 0
-!v1 = 0
-'--- scenario and baseline values
-call ScenarioExpr(%Var, %Comp, %v)
-'--- endogenous variable (has alias)
-call Exists(%v, !qfnd)
-'--- exogenous variable
-if not !qfnd then
-  '--- check use of suffix ins
-  %v = %Var + "_ins"
-  call Exists(%v, !qfnd)
-  if not !qfnd then
-    %v = %Var
-  endif
-endif
-call Eval(%v, %Year, !v)
+call Eval(%Var, %Year, !v)
 vr(2) = !v
 vr(1) = vExa
 '--- differences
@@ -875,7 +855,7 @@ subroutine local zDDiff(string %Type, string %Comp, _
 'return differences vector for shocked variable
 '
 ' Call: %Type   variable type
-'       %Comp   alias for baseline values
+'       %Comp   alias for reference
 '       %Ref    reference variable for scaling
 '       %Year   observation for which diffs are calculated
 '       vr      differences vector
@@ -927,7 +907,8 @@ subroutine local zSVarType(string %Shockvar, string %Type, _
 '       %Eq     equation if endogenous or blank otherwise
 '       %Var    root name of the variable
 '       %Bloc   bloc name or blank
-'       %LHVar  dependent variable in equation if endogenous
+'       %LHVar  name of dependent variable in equation
+'               (same as %Shockvar)
 '
 '---------------------------------------------------------------
 call zVarType(%Shockvar, %Type, %PC, %Ref)
@@ -968,7 +949,7 @@ endsub
 subroutine ExAnteValue(string %Var, string %Ins, string %Eq, _
   string %Year, scalar vShock, scalar vExa)
 '==============================================================
-'create and solve a single-equation model
+'return the value of a variable when shocked with no feedbacks
 '
 ' Call: %Var    dependent variable
 '       %Ins    instrument to which shock is applied
@@ -976,14 +957,15 @@ subroutine ExAnteValue(string %Var, string %Ins, string %Eq, _
 '       %Year   solution year
 '       vShock  size of shock
 '
-' Ret:  vExa    ex ante change in dependent variable
+' Ret:  vExa    value of dependent variable when its actual
+'               value is shocked
 '
 '---------------------------------------------------------------
 smpl %Year %Year
 model m_ea
 m_ea.append :{%Eq}
 m_ea.scenario(n,a=ea) ex ante
-m_ea.addassign(c,v) {%Var}
+m_ea.addassign {%Var}
 m_ea.override {%Var}_a
 m_ea.addinit(v=n,s=o) {%Var}
 {%Ins} = {%Ins} + vShock

@@ -1,6 +1,6 @@
 'PROGRAM: dat.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 4.6
+' CAM version 5.0
 '
 ' data preparation
 '
@@ -38,7 +38,7 @@ wfcreate(wf={%wkfile}, page=data) a {%start} {%end}
 pagecreate(page=graphs) a %start %end
 pagecreate(page=tables) a %start %end
 pageselect data
-call pLog("DAT PROGRAM v0625")
+call pLog("DAT PROGRAM v2605")
 '--- workfile settings
 table t_Settings
 t_Settings(1,1) = "Last actual observation"
@@ -62,7 +62,11 @@ t_Settings(9,2) = %start
 t_Settings(10,1) = "Last observation in workfile"
 t_Settings(10,2) = %end
 t_Settings(11,1) = "List of exogenous variables"
-t_Settings(11,2) = "DNN DNNF NCP NOP NCPF NOPF NCPM NOPM"
+t_Settings(11,2) = "DNNVF DNNVM DNNYF DNNYM NCP NOF NOM"
+t_Settings(12,1) = "First-ever simulation year"
+t_Settings(12,2) = ""
+t_Settings(13,1) = "Current simulation start"
+t_Settings(13,2) = ""
 
 '--- bloc definitions
 table t_Bloc
@@ -73,6 +77,7 @@ for !i = 1 to nBloc
 next
 call ListCol(t_Bloc, 1, nBloc, 1, " ", %blocs)
 pool p_Bloc {%blocs}
+
 '--- world defined as sum of blocs
 scalar nArea = nBloc
 call LoadTable(t_Bloc, nArea, "W;World;" + %blocs)
@@ -96,66 +101,164 @@ scalar nResult = 0
 ' PROCESSING
 '==================================================================
 
-'--- load data
+'--- load source data and prefix series names with wd_
 smpl %start %end
 call pLog("loading " + @str(!nSeries) + " series from WD.XLS")
+pagecreate(page=WD) a %start %end
+pageselect WD
 read(s=Load,t,b2) WD.XLS !nSeries
+pageselect data
+copy WD\* wd_*
+pagedelete WD
 
 '--- source data adjustments
 '--- rebase world price indexes: commodities and energy
-PXA = PXA/@elem(PXA, %base)
-PXE = PXE/@elem(PXE, %base)
+wd_PXA = wd_PXA/@elem(wd_PXA, %base)
+wd_PXE = wd_PXE/@elem(wd_PXE, %base)
 
 '--- rebase expenditure, GDP, export and import volumes
-p_Bloc.genr AXD0? = AXD0?*@elem(AXD?, %base)/@elem(AXD0?, %base)
-p_Bloc.genr APT0? = APT0?*@elem(APT?, %base)/@elem(APT0?, %base)
-p_Bloc.genr AXX0? = AXX0?*@elem(AXX?, %base)/@elem(AXX0?, %base)
-p_Bloc.genr AXM0? = AXM0?*@elem(AXM?, %base)/@elem(AXM0?, %base)
+p_Bloc.genr wd_AXD0? = wd_AXD0?*@elem(wd_AXD?, %base) _
+  /@elem(wd_AXD0?, %base)
+p_Bloc.genr wd_APT0? = wd_APT0?*@elem(wd_APT?, %base) _
+  /@elem(wd_APT0?, %base)
+p_Bloc.genr wd_AXX0? = wd_AXX0?*@elem(wd_AXX?, %base) _
+  /@elem(wd_AXX0?, %base)
+p_Bloc.genr wd_AXM0? = wd_AXM0?*@elem(wd_AXM?, %base) _
+  /@elem(wd_AXM0?, %base)
 
 '--- check world totals and base-year GDP identity
-call BlocEval("W","AXX0? AXM0?","")
-p_Bloc.genr AXM0? = AXM0?*AXX0W/AXM0W
-p_Bloc.genr APT0? = AXD0? + AXX0? - AXM0?
+call BlocEval("W","wd_AXX0? wd_AXM0?","")
+p_Bloc.genr wd_AXM0? = wd_AXM0?*wd_AXX0W/wd_AXM0W
+p_Bloc.genr wd_APT0? = wd_AXD0? + wd_AXX0? - wd_AXM0?
 
 '--- defining model variables
 call pLog("defining model variables")
 
 '============ 1: population, migration and employment
 
-p_Bloc.genr N_? = NNT3?       'total population
-p_Bloc.genr NCP_? = NCT3?     'child population
-p_Bloc.genr NOP_? = NOT3?     'old age population
-p_Bloc.genr NIM_? = NIT3?     'net migration
-p_Bloc.genr NWP_? = N_?-NCP_?-NOP_?     'working age population
+'--- population
+p_Bloc.genr NCP_? = wd_NCT3?       'child population
+p_Bloc.genr NIM_? = wd_NIT3?       'net migration
+p_Bloc.genr NUR_? = wd_NUT3?       'urban population
 
-p_Bloc.genr NCPF_? = NCF3?     'female child population
-p_Bloc.genr NWPF_? = NWF3?     'female working age population
-p_Bloc.genr NOPF_? = NOF3?     'female old age population
-p_Bloc.genr NF_? = NCPF_?+NWPF_?+NOPF_?     'total female population
+p_Bloc.genr NOF_? = wd_NOF3?     'female population 65+
+p_Bloc.genr NOM_? = wd_NOM3?     'male population 65+
+p_Bloc.genr NYF_? = wd_NYF3?     'female population 15-24
+p_Bloc.genr NYM_? = wd_NYM3?     'male population 15-24
+p_Bloc.genr NVF_? = wd_NWF3?+wd_NOF3?-wd_NYF3?
+                                 'female population 25+ 
+p_Bloc.genr NVM_? = wd_NWM3?+wd_NOM3?-wd_NYM3?
+                                 'male population 25+ 
 
-p_Bloc.genr NCPM_? = NCP_? - NCPF_?  'male child population
-p_Bloc.genr NWPM_? = NWP_? - NWPF_?  'male working age population
-p_Bloc.genr NOPM_? = NOP_? - NOPF_?  'male old age population
-p_Bloc.genr NM_? = N_? - NF_?     'total male population
+p_Bloc.genr NOP_? = NOF_?+NOM_?  'total elderly population
+p_Bloc.genr NPF_? = NYF_?+NVF_?  'female working population
+p_Bloc.genr NPM_? = NYM_?+NVM_?  'male working population
+p_Bloc.genr NP_? = NPF_?+NPM_?   'total working population
 
-p_Bloc.genr DNNF_? = d(NF_?) - 0.5*NIM_?  'female natural increase
-p_Bloc.genr DNN_? = d(N_?) - NIM_?        'total natural increase
-
-p_Bloc.genr NUR_? = NUT3?        'urban population
-p_Bloc.genr NE_? = NET3?         'employment
-p_Bloc.genr NEF_? = NEF3?        'female employment
-p_Bloc.genr NEM_? = NE_? - NEF_? 'male employment
-
-call BlocEval("W", "N_?", "")
+'--- total population
+p_Bloc.genr N_? = NCP_?+NP_?         'all ages
+p_Bloc.genr NWP_? = N_?-NCP_?-NOP_?  'working-age (15-64)
+call BlocEval("W","N_?","")
 
 '--- group and world totals
 call LoadTable(t_Result, nResult, _
   "GW;" _
-  +  "N_? NCP_? NWP_? NOP_? " _
-  +  "NF_? NCPF_? NWPF_? NOPF_? " _
-  +  "NM_? NCPM_? NWPM_? NOPM_? " _
-  +  "NIM_? DNN_? NUR_? " _
-  +  "NE_? NEF_? NEM_?" _
+  +  "N_? NCP_? NWP_? NOF_? NOM_? NOP_? " _
+  +  "NP_? NPF_? NPM_? " _
+  +  "NIM_? NUR_? " _
+  +  "NYF_? NYM_? NVF_? NVM_? " _
+)
+
+'--- natural increase (assuming net migration split equally
+'    between females and males and between young and adults)
+p_Bloc.genr DNNYF_? = d(NYF_?) - NIM_?/4   'female 15-25
+p_Bloc.genr DNNYM_? = d(NYM_?) - NIM_?/4   'male 15-25
+p_Bloc.genr DNNVF_? = d(NVF_?) - NIM_?/4   'female 25+
+p_Bloc.genr DNNVM_? = d(NVM_?) - NIM_?/4   'male 25+
+
+'--- labour force, employment and unemployment
+p_Bloc.genr NLF_? = wd_NLFF?       'female labour force
+p_Bloc.genr NLM_? = wd_NLFM?       'male labour force 
+p_Bloc.genr NLYF_? = wd_NLYF?      'female labour force 15–24
+p_Bloc.genr NLYM_? = wd_NLYM?      'male labour force 15-24
+p_Bloc.genr NLVF_? = NLF_?-NLYF_?  'female labour force 25+
+p_Bloc.genr NLVM_? = NLM_?-NLYM_?  'male labour force 25+
+
+p_Bloc.genr NUF_? = wd_NUEF?       'female unemployment
+p_Bloc.genr NUM_? = wd_NUEM?       'male unemployment
+p_Bloc.genr NUYF_? = wd_NUYF?      'female unemployment 15–24
+p_Bloc.genr NUYM_? = wd_NUYM?      'male unemployment 15–24
+
+p_Bloc.genr NUVF_? = NUF_?-NUYF_?  'female unemployment 25+
+p_Bloc.genr NUVM_? = NUM_?-NUYM_?  'male unemployment 25+
+ 
+p_Bloc.genr NEVF_? = NLVF_? - NUVF_?  'female employment 25+
+p_Bloc.genr NEVM_? = NLVM_? - NUVM_?  'male employment 25+
+p_Bloc.genr NEYF_? = NLYF_? - NUYF_?  'female employment 15-24
+p_Bloc.genr NEYM_? = NLYM_? - NUYM_?  'male employment 15-24
+p_Bloc.genr NEF_? = NEYF_? + NEVF_?   'total female employment
+p_Bloc.genr NEM_? = NEYM_? + NEVM_?   'total male employment
+
+'--- employment by broad sector
+p_Bloc.genr NEAF_? = wd_NAGF?  'female employment in agriculture
+p_Bloc.genr NEAM_? = wd_NAGM?  'male employment in agriculture
+p_Bloc.genr NEIF_? = wd_NINF?  'female employment in industry
+p_Bloc.genr NEIM_? = wd_NINM?  'male employment in industry
+'--- non-agricultural employment
+p_Bloc.genr NENF_? = NEF_?-NEAF_?     'female
+p_Bloc.genr NENM_? = NEM_?-NEAM_?     'male 
+'--- employment in services
+p_Bloc.genr NESF_? = NENF_?-NEIF_?     'female
+p_Bloc.genr NESM_? = NENM_?-NEIM_?     'male
+
+'--- ratios by sex and age-group
+p_Bloc.genr NLNYF_? = 100*NLYF_?/NYF_?  'participation
+p_Bloc.genr NLNVF_? = 100*NLVF_?/NVF_?
+p_Bloc.genr NLNYM_? = 100*NLYM_?/NYM_?
+p_Bloc.genr NLNVM_? = 100*NLVM_?/NVM_?
+p_Bloc.genr NULYF_? = 100*NUYF_?/NLYF_?  'unemployment
+p_Bloc.genr NULVF_? = 100*NUVF_?/NLVF_?
+p_Bloc.genr NULYM_? = 100*NUYM_?/NLYM_?
+p_Bloc.genr NULVM_? = 100*NUVM_?/NLVM_?
+
+'--- composition by sex
+'--- agr as share of total
+p_Bloc.genr NEAEF_? = 100*NEAF_?/NEF_?
+p_Bloc.genr NEAEM_? = 100*NEAM_?/NEM_?
+'--- ind as share of non-agr
+p_Bloc.genr NEINF_? = 100*NEIF_?/NENF_?
+p_Bloc.genr NEINM_? = 100*NEIM_?/NENM_?
+
+'--- totals
+p_Bloc.genr NL_? = NLF_?+NLM_?
+p_Bloc.genr NU_? = NUF_?+NUM_?
+p_Bloc.genr NE_? = NEF_?+NEM_?
+p_Bloc.genr NEA_? = NEAF_?+NEAM_?
+p_Bloc.genr NEI_? = NEIF_?+NEIM_?
+p_Bloc.genr NES_? = NESF_?+NESM_?
+p_Bloc.genr NEN_? = NEI_?+NES_?
+
+'--- group and world totals
+call LoadTable(t_Result, nResult, _
+  "GW;" _
+  +  "NL_? NLF_? NLM_? NLYF_? NLYM_? NLVF_? NLVM_? " _
+  +  "NLNVF_?=100*NLVF_?/NVF_? " _
+  +  "NLNVM_?=100*NLVM_?/NVM_? " _
+  +  "NLNYF_?=100*NLYF_?/NYF_? " _
+  +  "NLNYM_?=100*NLYM_?/NYM_? " _
+  +  "NU_? NUF_? NUM_? NUYF_? NUYM_? NUVF_? NUVM_? " _
+  +  "NULVF_?=100*NUVF_?/NLVF_? " _
+  +  "NULVM_?=100*NUVM_?/NLVM_? " _
+  +  "NULYF_?=100*NUYF_?/NLYF_? " _
+  +  "NULYM_?=100*NUYM_?/NLYM_? " _
+  +  "NE_? NEF_? NEM_? " _
+  +  "NEYF_? NEYM_? NEVF_? NEVM_? " _
+  +  "NEA_? NEAF_? NEAM_? NEI_? NEIF_? NEIM_? " _
+  +  "NES_? NESF_? NESM_? NEN_? NENF_? NENM_? " _
+  +  "NEAEF_?=100*NEAF_?/NEF_? " _
+  +  "NEAEM_?=100*NEAM_?/NEM_? " _
+  +  "NEINF_?=100*NEIF_?/NENF_? " _
+  +  "NEINM_?=100*NEIM_?/NENM_? " _
 )
 
 '==== 2: price base, domestic expenditure, c/a and trade balance
@@ -168,11 +271,10 @@ call LoadTable(t_Result, nResult, _
 '  ph  domestic expenditure deflator = AXD/H
 '   where AXD0 = const price expenditure and AXD = current $ exp
 '  rx  real exchange rate = ph/ph_w
-'      where ph_w is a rebased world expenditure deflator
+'      where ph_w is a world expenditure deflator
 '(world)
 '  H_W   world expenditure in PPP units = sum(H)
-'  pp0_w base-year PPP adjustment = base-year sum(ph.H)/sum(H)
-'  ph_w  world expenditure deflator = [sum(ph.H)/sum(H)]/pp0_w
+'  ph_w  world expenditure deflator = sum(ph.H)/sum(H)
 '(groups)
 '  H   group expenditure in PPP units = sum(H)
 '  ph  domestic expenditure deflator = sum(ph.H)/sum(H)
@@ -180,31 +282,30 @@ call LoadTable(t_Result, nResult, _
 '  rx  real exchange rate = ph/ph_w
 
 '--- PPP adjustment: market price GDP/PPP GDP
-p_Bloc.genr pp0_? = @elem(APT0?,%base)/@elem(APT1?,%base)
+p_Bloc.genr pp0_? = @elem(wd_APT0?,%base)/@elem(wd_APT1?,%base)
+
 '--- expenditure in constant PPP units
-p_Bloc.genr H_? = AXD0?/pp0_?
-call BlocEval("W","H_? AXD?","")
+p_Bloc.genr H_? = wd_AXD0?/pp0_?
+call BlocEval("W","H_? wd_AXD?","")
 '--- market price deflator: current dollars / constant PPP
-p_BW.genr ph_? = AXD?/H_?
-'--- world price deflator rebased
-series pp0_w = @elem(ph_w, %base)
-ph_w = ph_w/pp0_w
+p_BW.genr ph_? = wd_AXD?/H_?
+
 '--- real exchange rate: own deflator / world deflator
 p_BW.genr rx_? = ph_?/ph_w
 
 '--- current account and trade balance
-p_Bloc.genr X$_? = AXX?/ph_w
-p_Bloc.genr M$_? = AXM?/ph_w
-p_Bloc.genr X0_? = AXX0?
-p_Bloc.genr M0_? = AXM0?
+p_Bloc.genr X$_? = wd_AXX?/ph_w
+p_Bloc.genr M$_? = wd_AXM?/ph_w
+p_Bloc.genr X0_? = wd_AXX0?
+p_Bloc.genr M0_? = wd_AXM0?
 p_Bloc.genr TB$_? = X$_?-M$_?
 p_Bloc.genr TB0_? = X0_?-M0_?
 p_Bloc.genr TB_? = TB$_?/rx_?
-p_Bloc.genr CA$_? = BCA?/ph_w
+p_Bloc.genr CA$_? = wd_BCA?/ph_w
 p_Bloc.genr CA_? = CA$_?/rx_?
 p_Bloc.genr tt_? = (H_?+TB_?)/(H_?+TB0_?/pp0_?)
-p_Bloc.genr XIT$_? = (BCI?+BCT?)/ph_w
-p_Bloc.genr MIT$_? = (BDI?+BDT?)/ph_w
+p_Bloc.genr XIT$_? = (wd_BCI?+wd_BCT?)/ph_w
+p_Bloc.genr MIT$_? = (wd_BDI?+wd_BDT?)/ph_w
 p_Bloc.genr BIT$_? = CA$_?-TB$_?
 p_Bloc.genr NIT$_? = @iif(XIT$_?<MIT$_?,XIT$_?,MIT$_?)
 
@@ -217,8 +318,8 @@ call LoadTable(t_Result, nResult, _
   + "H_? " _
   + "ph_?(H_?) " _
   + "rx_?=ph_?/ph_w " _
-  + "pp0_?=@elem(ph_?," + %base + ") " _
 + ":GW;" _
+  + "pp0_?=@elem(ph_?," + %base + ") " _
   + "X$_? M$_? X0_? M0_? TB$_? TB0_? TB_? CA$_? CA_? " _
   + "XIT$_? MIT$_? BIT$_? " _
   + "NIT$_?=@iif(XIT$_?<MIT$_?,XIT$_?,MIT$_?) " _
@@ -229,15 +330,32 @@ call LoadTable(t_Result, nResult, _
 
 p_Bloc.genr Y_? = H_? + CA$_?/rx_?
 p_Bloc.genr Y$_? = Y_?*rx_?
-p_Bloc.genr V0_? = APT0?
-p_Bloc.genr V_? = APT0?/pp0_?
+p_Bloc.genr V0_? = wd_APT0?
+p_Bloc.genr V_? = wd_APT0?/pp0_?
 p_Bloc.genr VV$_? = H_?*rx_? + TB$_?
 p_Bloc.genr VV_? = H_? + TB$_?/rx_?
 p_Bloc.genr YN$_? = Y$_?*N_?
+
+'--- GDP by broad sector
+p_Bloc.genr VVA_? = wd_APA?/ph_?  'agriculture
+p_Bloc.genr VVE_? = wd_APE?/ph_?  'extraction and utilities
+p_Bloc.genr VVI_? = wd_APM?/ph_?  'industry
+p_Bloc.genr VVS_? = VV_?-VVA_?-VVE_?-VVI_?  'services
+
+'--- GDP by income type
+p_Bloc.genr VVEM_? = (wd_AYW?+wd_AYM?)/ph_?
+                                      'income from employment
+p_Bloc.genr VVTX_? = wd_AYX?/ph_?     'indirect taxes less subsidies
+p_Bloc.genr VVPR_? = VV_?-VVEM_?-VVTX_?  'profits and rent
+
+p_Bloc.genr rtx_? = 100*VVTX_?/(VV_?-VVTX_?) 'indirect tax markup
+p_Bloc.genr mu_? = 100*VVPR_?/VVEM_?         'profit markup
+
 '--- productive capacity
 p_Bloc.genr VT_? = 1.05*@movav(V_?,6)*exp(0.3*(log(V_?/V_?(-6))))
 
 call BlocEval("W", "Y_? V_? ", "")
+
 p_BW.genr YN_? = Y_?/N_?
 '--- relative income per capita
 p_BW.genr YR_? = YN_? / YN_W
@@ -246,6 +364,9 @@ p_BW.genr YR_? = YN_? / YN_W
 call LoadTable(t_Result, nResult, _
   "GW;" _
   + "Y$_? V_? V0_? VV_? VV$_? VT_? " _
+  + "VVA_? VVE_? VVI_? VVS_? " _
+  + "VVEM_? VVPR_? VVTX_? " _
+  + "mu_?(VVEM_?) rtx_?(VV_?-VVTX_?) " _
   + "YN$_?=Y$_?/N_? " _
 + ":G;" _
   + "Y_? " _
@@ -254,10 +375,18 @@ call LoadTable(t_Result, nResult, _
 )
 
 '======== 4: inflation, interest rates and nominal exchange rates
-
+'NB tt = (1+(AXX-AXM)/AXD)/(1+(AXX0-AXM0)/AXD0)
 '--- domestic cost and price inflation
-p_Bloc.genr pvi_? = FVI4?
-p_Bloc.genr pi_? = FPI4?
+p_Bloc.genr pvi_? = wd_FVI4?  'cost inflation (GDP)
+p_Bloc.genr pi_? = 100*((1+pvi_?/100)*tt_?(-1)/tt_?-1)
+                           'price inflation (domestic expenditure)
+
+p_Bloc.genr ei_? = 100*((1+pvi_?/100)/ _
+ (((1+mu_?/100)/(1+mu_?(-1)/100)) _
+ *((1+rtx_?/100)/(1+rtx_?(-1)/100)) _
+ *(V_?(-1)*NE_?/(V_?*NE_?(-1))))-1)
+                   'cost inflation (average earnings)
+
 p_Bloc.genr spvi_? = log(-0.718 + 3.436*(1+pvi_?/100)/(2+pvi_?/100))
 
 '--- valuation ratio for financial assets brought forward
@@ -265,7 +394,7 @@ p_Bloc.genr rpfa_? = 1/(1+spvi_?)
 
 '--- generate group series here to allow rebasing of price indexes
 call BlocEval("G", "H_? ph_?(H_?) V_? ", "")
-call BlocEval("GW", "pvi_?(V_?) pi_?(H_?)", "")
+call BlocEval("GW", "pi_?(H_?) pvi_?(V_?) ei_?(V_?) ", "")
 
 '--- dollar price inflation
 p_BGW.genr pi$_? = 100*(ph_?/ph_?(-1)-1)
@@ -282,8 +411,8 @@ p_BGW.genr phd_? = exp(@cumsum(log(1+pi_?/100)))
 p_BGW.genr phd_? = 100*phd_?/@elem(phd_?, %base)
 
 '--- nominal interest rates
-p_Bloc.genr is_? = FIS4?         'short-term rate
-p_Bloc.genr im_? = FIM4?         'bond yield
+p_Bloc.genr is_? = wd_FIS4?         'short-term rate
+p_Bloc.genr im_? = wd_FIM4?         'bond yield
 
 '--- real interest rates
 p_Bloc.genr irs_? = 100*((1 + is_?/100)/(1 + pi_?/100) - 1)
@@ -314,10 +443,11 @@ p_Bloc.genr mh_? = M0_?/(pp0_?*H_?+vx_?*X0_?)
 '--- unit cost of exports in international purchasing power units
 p_Bloc.genr ucx$_? = mh_?*vx_?*M$_?/M0_? _
                     +(1-mh_?*vx_?)*rx_?/pp0_?
-
+        
 '--- group and world totals
 call LoadTable(t_Result, nResult, _
   "GW;" _
+  + "ei_?(V_?) " _
   + "pvi_?(V_?) pi_?(H_?) is_?(H_?) im_?(H_?) " _
   + "irs_?(H_?) irm_?(H_?) " _
   + "pvd_?=pvd_?(-1)*(1+pvi_?/100) " _
@@ -327,17 +457,19 @@ call LoadTable(t_Result, nResult, _
   + "rxna_?=100*((1+pi$_?/100)/(1+pi_?/100)-1) " _
   + "rxd_?=rxd_?(-1)*(1+rxna_?/100) " _
   + "ucx$_?(X0_?) " _
-) 
-  
+)
+
 '============ 5: government expenditure, income and debt
-p_Bloc.genr G_? = (ACG?+AKG?)/ph_?       'expenditure
-p_Bloc.genr YG_? = AYG?/ph_?             'net income
-p_Bloc.genr NLG_? = YG_? - G_?           'net lending
-p_Bloc.genr LG_? = FGT?/ph_?             'government debt
-p_Bloc.genr LGF_? = FGF?/ph_?            'government debt held by banks
-p_Bloc.genr LGO_? = LG_? - LGF_?         'other government debt
-p_Bloc.genr AGF_? = FFG?/ph_?            'bank liabilities held by govt
-p_Bloc.genr NGF_? = AGF_? - LG_?         'net assets excl other investment
+p_Bloc.genr G_? = (wd_ACG?+wd_AKG?)/ph_?       'expenditure
+p_Bloc.genr YG_? = wd_AYG?/ph_?             'net income
+p_Bloc.genr YGD_? = YG_? - VVTX_?    'direct taxes less transfers
+p_Bloc.genr NLG_? = YG_? - G_?       'net lending
+p_Bloc.genr LG_? = wd_FGC?/ph_?      'government debt (cash basis)
+p_Bloc.genr LGA_? = wd_FGA?/ph_?     'government debt (accrual basis)
+p_Bloc.genr LGF_? = wd_FGF?/ph_?     'government debt held by banks
+p_Bloc.genr LGO_? = LG_? - LGF_?     'other government debt
+p_Bloc.genr AGF_? = wd_FFG?/ph_?     'bank liabilities held by govt
+p_Bloc.genr NGF_? = AGF_? - LG_?     'net identified assets
 p_Bloc.genr NGI_? = @iif(AGF_?<LG_?,AGF_?,LG_?)  'covered debt
 
 '--- flow of funds
@@ -352,43 +484,48 @@ p_Bloc.genr ILG_? = ILGO_?+ILGF_?            'total acquisition of govt debt
 '--- group and world totals
 call LoadTable(t_Result, nResult, _
   "GW;" _
-  + "G_? YG_? NLG_? LG_? LGF_? LGO_? AGF_? NGF_? ILGO_? ILGF_? ILG_? " _
-  + "NGI_?=@iif(AGF_?<LG_?,AGF_?,LG_?) " _
+  + "G_? YG_? YGD_? NLG_? LG_? LGF_? LGO_? AGF_? NGF_? " _
+  + "ILGO_? ILGF_? ILG_? NGI_?=@iif(AGF_?<LG_?,AGF_?,LG_?) " _
 )
 
 '============ 6: private expenditure and income
-p_Bloc.genr C_? = ACP?/ph_?                 'consumer spending
-p_Bloc.genr IP_? = AKP?/ph_?                'fixed capital formation
-p_Bloc.genr IV_? = AIV?/ph_?                'change in inventories
-p_Bloc.genr IPT_? = IP_? + IV_?             'total private investment (IP+IV) 
+p_Bloc.genr C_? = wd_ACP?/ph_?              'consumer spending
+p_Bloc.genr IP_? = wd_AKP?/ph_?             'fixed capital formation
+p_Bloc.genr IV_? = wd_AIV?/ph_?             'change in inventories
+p_Bloc.genr IPT_? = IP_? + IV_?             'total private investment 
 p_Bloc.genr YP_? = Y_? - YG_?               'disposable income
 p_Bloc.genr SP_? = YP_? - C_?               'saving
 p_Bloc.genr NLP_? = SP_? - IP_? - IV_?      'net lending
 
+'--- world investment totals
+call BlocEval("W", "IP_? IV_? ", "")
+
 '--- group and world totals
 call LoadTable(t_Result, nResult, _
-  "GW;" _
-  + "C_? IP_? IV_? IPT_? YP_? SP_? NLP_? " _
+  "G;" _
+  + "IP_? IV_? " _
++ ":GW;" _
+  + "C_? IPT_? YP_? SP_? NLP_? " _
 )
 
 '============ 7: external position and banking system
 '--- external position
-p_Bloc.genr R$_? = FXR?/ph_w            'reserves
-p_Bloc.genr AXO$_? = FXA?/ph_w          'other external assets
-p_Bloc.genr LX$_? = FXL?/ph_w           'external liabilities
+p_Bloc.genr R$_? = wd_FXR?/ph_w        'reserves
+p_Bloc.genr AXO$_? = wd_FXA?/ph_w      'other external assets
+p_Bloc.genr LX$_? = wd_FXL?/ph_w       'external liabilities
 p_Bloc.genr NX$_? = R$_?+AXO$_?-LX$_?  'external position
 p_Bloc.genr NXF$_? = AXO$_?-LX$_?      'external pos excl reserves
 p_Bloc.genr NXI$_? = @iif(AXO$_?<LX$_?,AXO$_?,LX$_?)
                                'covered liabilities (excl reserves)
-p_Bloc.genr NXN$_? = @iif(R$_?+AXO$_?<LX$_?,R$_?+AXO$_?,LX$_?)
+p_Bloc.genr NXN$_? = @iif(R$_?+AXO$_? < LX$_?, R$_?+AXO$_?, LX$_?)
                                'covered position (incl reserves)
 
 '--- exchange reserves
-p_Bloc.genr IR$_? = -BFI?/ph_w
+p_Bloc.genr IR$_? = -wd_BFI?/ph_w
 p_Bloc.genr rpr$_? = @nan((R$_?-IR$_?)/R$_?(-1),1)
 p_Bloc.genr rpr$_? = @iif(rpr$_?<0.001,0.001,rpr$_?)
 '--- other external assets
-p_Bloc.genr IAXO$_? = -(BDA?+BPA?+BOA?)/ph_w
+p_Bloc.genr IAXO$_? = -(wd_BDA?+wd_BPA?+wd_BOA?)/ph_w
 p_Bloc.genr rpaxo$_? = @nan((AXO$_?-IAXO$_?)/AXO$_?(-1),1)
 p_Bloc.genr rpaxo$_? = @iif(rpaxo$_?<0.001,0.001,rpaxo$_?)
 '--- external liabilities
@@ -397,8 +534,9 @@ p_Bloc.genr rplx$_? = @nan((LX$_?-ILX$_?)/LX$_?(-1),1)
 p_Bloc.genr rplx$_? = @iif(rplx$_?<0.001,0.001,rplx$_?)
 
 '--- bank deposits and loans
-p_Bloc.genr DP_? = FFP?/ph_?         'bank deposits and capital
-p_Bloc.genr LN_? = (FFG?+FFP?-FXR?-FGF?)/ph_?    'bank loans
+p_Bloc.genr DP_? = wd_FFP?/ph_?         'bank deposits and capital
+p_Bloc.genr LN_? = (wd_FFG?+wd_FFP?-wd_FXR?-wd_FGF?)/ph_?
+                                        'bank loans
 p_Bloc.genr NFF_? = DP_? - LN_?                  'liquidity
 p_Bloc.genr NFI_? = @iif(DP_?<LN_?,DP_?,LN_?)   'covered lending
 
@@ -483,7 +621,7 @@ call LoadTable(t_Result, nResult, _
 )
 
 '================ 9: capital stock and wealth
-  
+
 '--- produced capital stock
 scalar rdp = 0.05                           'depreciation rate
 smpl %start %start
@@ -522,7 +660,8 @@ call LoadTable(t_Result, nResult, _
 '============ 10: trade by commodity group
 
 '--- commodity prices relative to world exp deflator
-series pa_w = PXA/ph_w
+series pa_w = wd_PXA/ph_w
+
 '--- lagged terms of trade for primary commodities
 smpl %start %start
 p_Bloc.genr lpa_? = log(pa_w/rx_?)
@@ -530,21 +669,22 @@ smpl %start+1 %end
 p_Bloc.genr lpa_? = 0.3*log(pa_w/rx_?) + 0.7*lpa_?(-1)
 smpl %start %end
 
-p_Bloc.genr XA$_? = TXA?/ph_w
-p_Bloc.genr MA$_? = TMA?/ph_w
-p_Bloc.genr XE$_? = TXE?/ph_w
-p_Bloc.genr ME$_? = TME?/ph_w
-p_Bloc.genr XM$_? = TXM?/ph_w
-p_Bloc.genr MM$_? = TMM?/ph_w
-p_Bloc.genr XS$_? = BXS?/ph_w
-p_Bloc.genr MS$_? = BMS?/ph_w
+p_Bloc.genr XA$_? = wd_TXA?/ph_w
+p_Bloc.genr MA$_? = wd_TMA?/ph_w
+p_Bloc.genr XE$_? = wd_TXE?/ph_w
+call BlocMinVal("B", "XE$ 0.001")
+p_Bloc.genr ME$_? = wd_TME?/ph_w
+p_Bloc.genr XM$_? = wd_TXM?/ph_w
+p_Bloc.genr MM$_? = wd_TMM?/ph_w
+p_Bloc.genr XS$_? = wd_BXS?/ph_w
+p_Bloc.genr MS$_? = wd_BMS?/ph_w
 
 '--- iteration to estimate constant price commodity breakdown
 '--- initial values
-p_Bloc.genr XA0_? = TXA?/PXA
-p_Bloc.genr MA0_? = TMA?/PXA
-p_Bloc.genr XE0_? = TXE?/PXE
-p_Bloc.genr ME0_? = TME?/PXE
+p_Bloc.genr XA0_? = wd_TXA?/wd_PXA
+p_Bloc.genr MA0_? = wd_TMA?/wd_PXA
+p_Bloc.genr XE0_? = wd_TXE?/wd_PXE
+p_Bloc.genr ME0_? = wd_TME?/wd_PXE
 p_Bloc.genr XM0_? = XM$_?
 p_Bloc.genr MM0_? = MM$_?
 p_Bloc.genr XS0_? = XS$_?
@@ -557,6 +697,7 @@ for !j = 1 to 4
   series tmw_{%a}
 next
 series txw
+
 call BlocEval("W", "X0_?", "")
 
 '--- 10 repetitions provide convergence
@@ -568,6 +709,7 @@ for !k = 1 to 10
     txw_{%a} = 0
     tmw_{%a} = 0
   next
+
   '--- bloc totals
   p_Bloc.genr txb_? = XA0_? + XE0_? + XM0_? + XS0_?
   p_Bloc.genr tmb_? = MA0_? + ME0_? + MM0_? + MS0_?
@@ -600,28 +742,18 @@ call LoadTable(t_Result, nResult, _
 )
 
 '--- manufactures: market shares and intra trade
-p_Bloc.genr XMIN$_? = 0
 for !i = 1 to nBloc
   %b = t_Bloc(!i, 1)
-  %s = "TPM" + %b + %b
-  '--- bloc intra-trade
-  if @isobject(%s) then
-    XMIN$_{%b} = {%s}/ph_w
-  endif
+  %s = "wd_TPM" + %b + %b
   '--- bloc market shares
   for !j = 1 to nBloc
     %p = t_Bloc(!j, 1)
-    %s = "TPM" + %b + %p
+    %s = "wd_TPM" + %b + %p
     if @isobject(%s) then
-      series sxm_{%b}_{%p} = {%s}/TMM{%p}
+      series sxm_{%b}_{%p} = @nan({%s}/wd_TMM{%p}, 0.00001)
     endif
   next
 next
-
-'--- world total of bloc-level intra-trade
-call LoadTable(t_Result, nResult, _
-  "W;" + "XMIN$_? " _
-)
 
 '--- group x group trade values and group intra-trade
 '--- partner groups
@@ -653,12 +785,10 @@ for !k1 = 1 to nGroup
     %tl = %tl + "XM$_" + %g + "_" + %pg + "=" _
       + @mid(%t, 2) + " "
   next
-  '--- add intra-trade definition to the list
-  %tl = %tl + "XMIN$_" + %pg + "=XM$_" + %pg + "_" + %pg
   call LoadTable(t_Result, nResult, _
     "W;" + %tl _
   )
-next  
+next
 
 '--- weighted average supply price for imports of manufactures
 ' compute as inverse weighted average of inverse supplier prices
@@ -685,20 +815,21 @@ p_Bloc.genr EM_? = 0
 
 !c = 2                  'higher weight for primary electricity
 '--- non-carbon production (primary electricity)
-p_Bloc.genr EPN_? = !c*EPE2?
+p_Bloc.genr EPN_? = !c*wd_EPE2?
 for !j = 1 to 4
   %f = @mid("EGLS", !j, 1)
-  p_Bloc.genr EP_? = EP_? + !c*EP{%f}2?
-  p_Bloc.genr EX_? = EX_? + !c*EX{%f}2?
-  p_Bloc.genr EM_? = EM_? + !c*EM{%f}2?
+  p_Bloc.genr EP_? = EP_? + !c*wd_EP{%f}2?
+  p_Bloc.genr EX_? = EX_? + !c*wd_EX{%f}2?
+  p_Bloc.genr EM_? = EM_? + !c*wd_EM{%f}2?
   !c = 1
 next
+call BlocMinVal("B", "EPN 0.001, EX 0.001")
 
 '--- carbon energy production
 p_Bloc.genr EPC_? = EP_? - EPN_?
 
 '--- CO2 emissions with group and world totals as policy target
-p_Bloc.genr CO2_? = IHCE?
+p_Bloc.genr CO2_? = wd_IHCE?
 call BlocEval("GW", "CO2_? ", "")
 
 '--- adjust imports for world balance
@@ -712,7 +843,7 @@ call LoadTable(t_Result, nResult, _
   "GW;ED_? EP_? EPC_? EPN_? EX_? EM_? ")
 
 '--- oil price relative to world exp deflator
-series pe_w = PXE/ph_w
+series pe_w = wd_PXE/ph_w
 '--- domestic energy prices
 p_Bloc.genr pep_? = 400*pe_w/rx_?  'producer price per toe
 p_Bloc.genr ttco2_? = 0            'tax on CO2 emissions per ton
@@ -741,10 +872,10 @@ p_Bloc.genr lttco2_? = 0.05*log(1+ttco2_?/pepmax) _
 smpl %start %end
 
 '============ 12: well-being indicators
-p_Bloc.genr JHD_? = IHDI?  'human development index
-p_Bloc.genr JIM_? = IHIM?  'infant mortality rate per 1000
-p_Bloc.genr JLX_? = IHLX?  'life expectancy at birth (years)
-p_Bloc.genr JGN_? = IYGN?  'internal Gini index
+p_Bloc.genr JHD_? = wd_IHDI?  'human development index
+p_Bloc.genr JIM_? = wd_IHIM?  'infant mortality rate per 1000
+p_Bloc.genr JLX_? = wd_IHLX?  'life expectancy at birth (years)
+p_Bloc.genr JGN_? = wd_IYGN?  'internal Gini index
 
 call LoadTable(t_Result, nResult, _
   "GW;JHD_?(N_?) JIM_?(NCP_?) JLX_?(NCP_?) JGN_?(N_?) " _
@@ -752,20 +883,10 @@ call LoadTable(t_Result, nResult, _
 
 '============ delete source series
 
-delete AC* AK* AXD* AXX* AXM* APT* AYG* AIV*
-delete N*3*
-delete PXA PXE
-delete BC* BD* BF* BG* BM* BO* BP* BX*
-delete TM* TPM* TX*
-delete EPE* EPG* EPL* EPS*
-delete EXE* EXG* EXL* EXS*
-delete EME* EMG* EML* EMS*
-delete IH* IY*
-delete F*
-
-call pLog("computing extended model series")
+delete wd_*
 
 '============ model extension
+call pLog("computing extended model series")
 table t_ModelX
 scalar nModelX = 0
 call LoadTable(t_ModelX, nModelX, _
@@ -790,7 +911,6 @@ call LoadTable(t_ModelX, nModelX, _
   + "HNX_?=@nan((R$_?(-1)*rpr$_?+AXO$_?(-1)*rpaxo$_?" _
     + "-LX$_?(-1)*rplx$_?)/rx_?" _
     + "-(R$_?(-1)+AXO$_?(-1)-LX$_?(-1))/rx_?(-1),0) " _
-  + "RRF_?=100*LGF_?/LN_? " _
 )
 
 '--- historical values
@@ -803,7 +923,6 @@ call LoadTable(t_Result, nResult, _
   "GW;" _
   + "BA$_? BE$_? BM$_? BS$_? BA0_? BE0_? BM0_? BS0_? " _
   + "EB_? HNX_? " _
-  + "RRF_?=100*LGF_?/LN_? " _
 )
 
 call pLog("defining additional result series")
@@ -817,6 +936,7 @@ call pLog("defining additional result series")
 '--- Theil indexes: list of variables
 table t_TVar
 scalar nTVar = 0
+
 call LoadTable(t_TVar, nTVar, _
   "Y;income:" _
   + "G;govt expenditure:" _
@@ -825,13 +945,11 @@ call LoadTable(t_TVar, nTVar, _
   + "CO2;CO2 emissions:" _
   + "XM$;manufactured exports:" _
   + "XS$;service exports" _
-)
+  )
 
 '--- world prices
 call LoadTable(t_Result, nResult, _
   "W;" _
-  + "pa$_?=pa_?*ph_? " _
-  + "pe$_?=pe_?*ph_? " _
   + "pm_?=M$_?/M0_? " _
   + "pm$_?=pm_?*ph_? " _
   + "pmm_?=MM$_?/MM0_? " _
@@ -841,7 +959,7 @@ call LoadTable(t_Result, nResult, _
   + "pkp$_?=pkp_?*ph_? " _
   + "pikp_?=@pc(pkp_?) " _
   + "pikp$_?=@pc(pkp$_?) " _
-)
+  )
 
 '--- ratios to GDP
 call LoadTable(t_Result, nResult, _
@@ -863,7 +981,6 @@ call LoadTable(t_Result, nResult, _
   + "EPV_?=1000*EP_?/V_? " _
   + "EPND_?=100*EPN_?/ED_? " _
   + "EPNP_?=100*EPN_?/EP_? " _
-  + "GSS_?=100*(G_?/(2*NOP_?+NCP_?+N_?))/YN_? " _
   + "GV_?=100*G_?/VV_?" _
 )
 call LoadTable(t_Result, nResult, _
@@ -888,45 +1005,58 @@ call LoadTable(t_Result, nResult, _
   + "MAV$_?=100*MA$_?/VV$_? " _
   + "MEV$_?=100*ME$_?/VV$_? " _
   + "MITV$_?=100*MIT$_?/VV$_? " _
-  + "MMEX$_?=MM$_?-XMIN$_? " _
   + "MMV$_?=100*MM$_?/VV$_? " _
-  + "MMEXV$_?=100*MMEX$_?/VV$_? " _
-  + "MMINV$_?=100*XMIN$_?/VV$_? " _
   + "MSV$_?=100*MS$_?/VV$_? " _
   + "MV$_?=100*M$_?/VV$_?" _
-)
+  )
 call LoadTable(t_Result, nResult, _
   "BGW;" _
-  + "NDV_?=100*(KP_?+LG_?-AGF_?)/VV_? " _
   + "NLGV_?=100*NLG_?/VV_? " _
   + "NLPV_?=100*NLP_?/VV_? " _
   + "NXV$_?=100*NX$_?/VV$_? " _
   + "pmm_?=MM$_?/MM0_? " _
   + "pxm_?=XM$_?/XM0_? " _
-  + "RV$_?=100*R$_?/VV$_? " _
-  + "RMLX$_?=100*R$_?/(M$_?+LX$_?) " _
+  + "RALX$_?=100*AX$_?/LX$_? " _
+  + "RMX$_?=100*R$_?/M$_? " _
   + "SPV_?=100*SP_?/VV_? " _
   + "SXMM_?=100*XM$_?/MM$_W " _
-  + "XMEX$_?=XM$_?-XMIN$_? " _
   + "TBV$_?=100*TB$_?/VV$_?" _
-)
-'--- NB: calculation of SXMMEX deferred because it requires
-'        XMEX$_W to be calculated first
+  )
 call LoadTable(t_Result, nResult, _
   "BGW;" _
-  + "SXMMEX_?=100*XMEX$_?/XMEX$_W " _
+  + "ulc$_?=rx_?*VVEM_?*pp0_?/v0_? " _
+  + "uva$_?=rx_?*(VVEM_?+VVPR_?)*pp0_?/v0_? " _
   + "VVT_?=100*(V_?/VT_?-1) " _
   + "WPV_?=100*WP_?/VV_? " _
   + "XAV$_?=100*XA$_?/VV$_? " _
   + "XEV$_?=100*XE$_?/VV$_? " _
   + "XITV$_?=100*XIT$_?/VV$_? " _
-  + "XMM_?=100*XM$_?/MM$_? " _
-  + "XMMIN_?=100*XMIN$_?/MM$_? " _
   + "XMV$_?=100*XM$_?/VV$_? " _
   + "XSV$_?=100*XS$_?/VV$_? " _
   + "XV$_?=100*X$_?/VV$_? " _
-  + "YGV_?=100*YG_?/VV_?" _
-)
+  + "YGV_?=100*YG_?/VV_? " _
+  + "YGDV_?=100*YGD_?/VV_? " _
+  )
+
+'--- other policy indicators
+'    VGA  agriculture productivity gap as % of GDP
+'    NNE  economic dependency ratio (% of employed population)
+'    GSS  government service standard
+'--- external assets and liabilities as % of domestic deposits
+'    rlx  liabilities
+'    rr   official reserves
+'    rax  assets
+'    raxo other assets (excl official reserves)
+call LoadTable(t_Result, nResult, _
+  "BGW;" _
+  + "VGA_?=100*(NEA_?/NE_?-VVA_?/VV_?)/(1-NEA_?/NE_?) " _
+  + "NNE_?=100*(N_?/NE_?-1) " _
+  + "GSS_?=100*(G_?/(NCP_?+NYF_?+NYM_?+NOP_?))/YN_? " _
+  + "rlx_?=100*LX$_?/(rx_?*DP_?) " _
+  + "rr_?=100*R$_?/(rx_?*DP_?) " _
+  + "rax_?=100*AX$_?/(rx_?*DP_?) " _
+  + "raxo_?=100*AXO$_?/(rx_?*DP_?) " _
+  )
 
 '--- per capita results
 call LoadTable(t_Result, nResult, _
@@ -934,10 +1064,15 @@ call LoadTable(t_Result, nResult, _
   + "CO2N_?=CO2_?/N_? " _
   + "VN_?=V_?/N_? " _
   + "VNE_?=V_?/NE_? " _
+  + "VVAE_?=VVA_?/NEA_? " _
+  + "VVIE_?=VVI_?/NEI_? " _
+  + "VVSE_?=VVS_?/NES_? " _
+  + "VVEME_?=VVEM_?/NE_? " _
   + "VN0_?=V0_?/N_? " _
   + "VVN$_?=VV$_?/N_? " _
   + "YN$_?=Y$_?/N_? " _
-)
+  )
+
 
 '--- growth rates
 call LoadTable(t_Result, nResult, _
@@ -960,9 +1095,8 @@ call LoadTable(t_Result, nResult, _
   + "DM0_?=@pc(M0_?) " _
   + "DN_?=@pc(N_?) " _
   + "DNE_?=@pc(NE_?) " _
-  + "DNER_?=@pc(NE_?/(NWP_?+NOP_?)) " _
-  + "DNWP_?=@pc(NWP_?) " _
-  + "DPV_?=100*DP_?/VV_? " _  
+  + "DNER_?=@pc(NE_?/NP_?) " _
+  + "DNP_?=@pc(NP_?) " _
   + "DTBV_?=100*d(TB0_?)/V0_?(-1) " _
   + "DVV$_?=@pc(VV$_?) " _
   + "DV_?=@pc(V_?) " _
@@ -982,26 +1116,43 @@ call LoadTable(t_Result, nResult, _
   + "DY$_?=@pc(Y$_?) " _
   + "DYN$_?=@pc(YN$_?) " _
   + "DYN_?=@pc(YN_?)" _
-)
+  )
 
 '--- population structure and employment
 call LoadTable(t_Result, nResult, _
   "BGW;" _
-  + "NCPE_?=100*NCP_?/NE_? " _
-  + "NCPEF_?=100*NCPF_?/NEF_? " _
-  + "NCPEM_?=100*NCPM_?/NEM_? " _
   + "NCPN_?=100*NCP_?/N_? " _
-  + "NEFM_?=100*NEF_?/NEM_? " _
-  + "NEN_?=100*NE_?/N_? " _
-  + "NER_?=100*NE_?/(NWP_?+NOP_?) " _
-  + "NERF_?=100*NEF_?/(NWPF_?+NOPF_?) " _    
-  + "NERM_?=100*NEM_?/(NWPM_?+NOPM_?) " _
-  + "NFM_?=100*NF_?/NM_? " _      
+  + "NEAE_?=100*NEA_?/NE_? " _
+  + "NEFE_?=100*NEF_?/NE_? " _
+  + "NEIE_?=100*NEI_?/NE_? " _
+  + "NER_?=100*NE_?/NP_? " _
+  + "NESE_?=100*NES_?/NE_? " _
+  + "NERVF_?=100*NEVF_?/NVF_? " _
+  + "NERVM_?=100*NEVM_?/NVM_? " _
+  + "NERYF_?=100*NEYF_?/NYF_? " _
+  + "NERYM_?=100*NEYM_?/NYM_? " _
   + "NIME_?=100*NIM_?/NE_? " _
   + "NOPN_?=100*NOP_?/N_? " _
+  + "NUL_?=100*NU_?/NL_? " _
+  + "NULF_?=100*NUF_?/NLF_? " _
+  + "NULM_?=100*NUM_?/NLM_? " _
   + "NURN_?=100*NUR_?/N_? " _
   + "NWPN_?=100*NWP_?/N_? " _
+  + "NYN_?=100*(NYF_?+NYM_?)/N_? " _
 )
+
+'--- share of GDP by broad sector and income type
+call LoadTable(t_Result, nResult, _
+  "BGW;" _
+  + "VVAV_?=100*VVA_?/VV_? " _
+  + "VVEV_?=100*VVE_?/VV_? " _
+  + "VVIV_?=100*VVI_?/VV_? " _
+  + "VVSV_?=100*VVS_?/VV_? " _
+  + "VVEMV_?=100*VVEM_?/VV_? " _
+  + "VVPRV_?=100*VVPR_?/VV_? " _
+  + "VVTXV_?=100*VVTX_?/VV_? " _
+  )
+
 
 '--- current dollar domestic income and spending
 %tlv = "Y;H;YG;G;NLG;AGF;LG;LGO;LN;DP;YP;SP;C;IP;IV;IPT;NLP"
@@ -1133,43 +1284,43 @@ call LoadTable(t_WRep, nWRep, _
   + "Oil,Exports of manufactures," _
   + "Exports of services,Exports of goods & services," _
   + "Asset prices;GT;" _
-  +  "base " + %base + " = 1; auto" _
+  +  "base " + %base + " = 1;auto" _
 )
     
 '--- components of world demand
 call LoadTable(t_WRep, nWRep, _
   "dem;Components of final demand;" _
-  + "CV_W,IPV_W,IVV_W,GV_W,HV_W,XV$_W;" _
+  + "CV_W,IPV_W,IVV_W,GV_W,XV$_W;" _
   + "Consumption,Private fixed capital formation," _
   + "Inventory accumulation," _
-  + "Government spending,Total domestic spending," _
+  + "Government spending," _
   + "Exports of goods & services;GT;" _
-  +"per cent of GDP;auto" _
+  +"per cent of GDP;" _
 )
 
 '--- world population and employment
 call LoadTable(t_WRep, nWRep, _
   "dne;Population and employment;" _
-  + "NWPN_W,NOPN_W,NCPN_W,NURN_W,NEN_W,NER_W;" _
+  + "NWPN_W,NOPN_W,NCPN_W,NURN_W,NER_W;" _
   + "Working age population," _
   + "Old age population," _
   + "Child population," _
   + "Urban population," _
   + "Employed population," _
   + "Employment rate;GT;" _
-  + "per cent;0,70" _
+  + "per cent;" _
 )
 
 '--- world energy and emissions
 call LoadTable(t_WRep, nWRep, _
- "ene;energy and emissions;" _
+ "ene;Energy and emissions;" _
   + "EP_W,EPC_W,EPN_W,EX_W,CO2_W;" _
   + "Total energy production," _
   + "Carbon energy production," _
   + "Non-carbon energy production," _
   + "Exports of energy," _
   + "CO2 emissions;GT;" _
-  + "million tons;auto" _
+  + "million tons;" _
 )
 
 '--- Gini / Theil inequality 
@@ -1180,7 +1331,7 @@ for !j = 1 to nTVar
   %t = %t + ",TH_" + t_TVar(!j,1)
   %tn = %tn  + ",Theil " + t_TVar(!j,2)
 next
-%t = %t + ",rylow"
+%t = %t + ",rylow_w"
 %tn = %tn + ",Low income ratio"  
 %t = %t + %tn + ";GT;index;auto"
 call LoadTable(t_WRep, nWRep, %t)
@@ -1197,8 +1348,16 @@ call LoadTable(t_WVar, nWVar, _
   + "V0_W;GDP at market rates;$m " + %base + ";0:" _
   + "VVT_W;Capacity utilisation;%;1:" _
   + "VV$_W;GDP purchasing power at world prices;$m wpp;0:" _
-  + "Y_W;Income at ppp rates $;$m ppp;0:" _
-  + "Y$_W;Income at world ppp $;$m wpp;0:" _
+  + "VV_W;income from GDP at ppp rates;$m ppp;0:" _
+  + "VVA_W;GDP in agriculture;$m ppp;0:" _
+  + "VVE_W;GDP in extraction and utilities;$m ppp;0:" _
+  + "VVI_W;GDP in industry;$m ppp;0:" _
+  + "VVS_W;GDP in services;$m ppp;0:" _
+  + "VVEM_W;Labour and mixed income;$m ppp;0:" _
+  + "VVPR_W;Profits and rent;$m ppp;0:" _
+  + "VVTX_W;Indirect taxes less subsidies;$m ppp;0:" _
+  + "Y_W;Income at ppp rates;$m ppp;0:" _
+  + "Y$_W;Income at world ppp;$m wpp;0:" _
   + "N_W;Population;m;0:" _
   + "YN_W;Income per capita;$ ppp;0:" _
   + "VN0_W;GDP per capita at market rates $;$ " + %base + ";0:" _
@@ -1211,11 +1370,6 @@ call LoadTable(t_WVar, nWVar, _
   + "EPC_W;Carbon primary energy production;mtoe;0:" _
   + "EPN_W;Non-carbon primary energy production;mtoe;0:" _
   + "CO2_W;CO2 emissions;mt;0:" _
-  + "NE_W;Employment;m;0:" _
-  + "NWP_W;Working age population;m;0:" _
-  + "NOP_W;Old age population;m;0:" _
-  + "NCP_W;Child population;m;0:" _
-  + "NUR_W;Urban population;m;0:" _
   + "pi_w;Domestic ccy inflation;% p.a.;3:" _
   + "pi$_w;Dollar inflation;% p.a.;3:" _
   + "ph_w;Domestic expenditure deflator;index;2:" _
@@ -1229,8 +1383,44 @@ call LoadTable(t_WVar, nWVar, _
   + "pmm_w;Real price of manuf exports;index;2:" _
   + "pms_w;Real price of service exports;index;2:" _
   + "pm_w;Real price of exports of goods & services;index;2:" _
-)
+  )
 
+'--- world variables (dump as CSV)
+call LoadTable(t_WVar, nWVar, _
+  "NYF_W;Female population 15-24;m;0:" _
+  + "NYM_W;Male population 15-24;m;0:" _
+  + "NVF_W;Female population 25+;m;0:" _
+  + "NVM_W;Male population 25+;m;0:" _
+  + "NWP_W;Working age population;m;0:" _
+  + "NOP_W;Old age population;m;0:" _
+  + "NCP_W;Child population;m;0:" _
+  + "NUR_W;Urban population;m;0:" _
+  + "NE_W;Employment;m;0:" _
+  + "NEYF_W;Female employment 15-24 ;m;0:" _
+  + "NEYM_W;Male employment 15-24;m;0:" _
+  + "NEVF_W;Female employment 25+;m;0:" _
+  + "NEVM_W;Male employment 25+;m;0:" _
+  )
+
+'--- world variables (dump as CSV)
+call LoadTable(t_WVar, nWVar, _
+  "NL_W;Labor force;m;0:" _
+  + "NLYF_W;Female labor force 15-24;m;0:" _
+  + "NLYM_W;Male labor force 15-24;m;0:" _
+  + "NLVF_W;Female labor force 25+;m;0:" _
+  + "NLVM_W;Male labor force 25+;m;0:" _
+  + "NU_W;Unemployment;m;0:" _
+  + "NUYF_W;Female unemployment 15-24t;m;0:" _
+  + "NUYM_W;Male unemployment 15-24;m;0:" _
+  + "NUVF_W;Female unemployment 25+;m;0:" _
+  + "NUVM_W;Male unemployment 25+;m;0:" _
+  + "NEAF_W;Female employment in agriculture;m;0:" _
+  + "NEAM_W;Male employment in agriculture;m;0:" _
+  + "NEIF_W;Female employment in industry;m;0:" _
+  + "NEIM_W;Male employment in industry;m;0:" _
+  + "NESF_W;Female employment in services;m;0:" _
+  + "NESM_W;Male employment in services;m;0:" _
+  )
 '--- Gini / Theil inequality 
 '--- dump as CSV 
 %t = "GY;Gini income;%;2:"
@@ -1248,6 +1438,17 @@ call LoadTable(t_WVar, nWVar, %t)
 '--- bloc graphs and tables
 table t_BRep
 scalar nBRep = 0
+call LoadTable(t_BRep, nBRep, _
+  "VGA_?;Productivity gap in agriculture;GT;% of GDP;auto:" _  
+  + "NNE_?;Economic dependency ratio;GT;%;auto:" _  
+  + "GSS_?;Government service standard;" _
+    + "GT;index;auto:" _  
+  + "rlx_?;External liability ratio;GT;%;auto:" _  
+  + "rr_?;Reserve ratio;GT;%;auto:" _  
+  + "rax_?;External asset ratio;GT;%;auto:" _  
+  + "raxo_?;Non-reserve asset ratio;GT;%;auto:" _
+  )  
+
 call LoadTable(t_BRep, nBRep, _
   "AGFV_?;Govt investment in banks as % of GDP;GT;%;auto:" _
   + "AXV$_? LXV$_?;External] assets and liabilities" _
@@ -1274,7 +1475,7 @@ call LoadTable(t_BRep, nBRep, _
   + "CO2N_?;Annual CO2 emissions per capita;GT;tons;auto:" _
   + "CO2V_?;CO2 emissions per $ of GDP;GT;kg per $;0,2.5:" _
   + "CV_?;Consumers expenditure as % of GDP;GT;%;auto:" _
-)
+  )
 call LoadTable(t_BRep, nBRep, _
   "DC_? DH_?;" _
     + "Growth of] consumer spending and total domestic spending;" _
@@ -1288,9 +1489,9 @@ call LoadTable(t_BRep, nBRep, _
     + " non-government investment [to GDP growth;GT;%;-10,15:" _
   + "DM$_? DM0_?;Growth of import] value and volume;GT;%;-30,30:" _
   + "DN_?;Population growth rate;GT;% per year;-5,5:" _
-  + "DNER_?;Growth of employment rate;GT;% per year;-5,5:" _
+  + "DNER_?;Change in employment rate;GT;% per year;-5,5:" _
   + "DNE_?;Employment growth rate;GT;% per year;-5,5:" _
-  + "DNWP_?;Working age population growth rate;" _
+  + "DNP_?;Working population growth rate;" _
     + "GT;% per year;-5,5:" _
   + "DPV_? LNV_?;Bank] deposits and lending" _
     + " [as % of GDP;GT;%;0,300:" _
@@ -1310,14 +1511,15 @@ call LoadTable(t_BRep, nBRep, _
     + "million tons of oil equivalent;auto:" _
   + "EDV_? EPV_?;Energy] demand and production [relative to GDP" _
     + ";GT;kg of oil equivalent per $;0,2:" _
+  + "ei_?;Earnings inflation;GT;%;-5,30:" _
+  + "ei_? pi_?;Earnings and price [inflation;G;%;-5,30:" _
   + "EPC_? EPN_?;Carbon and non-carbon [energy production;GT;" _
     + "million tons of oil equivalent;auto:" _
   + "EPND_? EPNP_?;" _
     + "Non-carbon energy as a share of] demand and production" _
     + ";GT;%;0,100:" _
-  + "GSS_?;Government service standard;GT;%;auto:" _
   + "GV_?;Government expenditure as % of GDP;GT;%;auto:" _
-)
+  )
 
 call LoadTable(t_BRep, nBRep, _
   "HAGFV_? HDPV_?;Holding gains on] govt and priv investment" _
@@ -1341,56 +1543,68 @@ call LoadTable(t_BRep, nBRep, _
   + "LGOV_?;Non-bank government debt as % of GDP;GT;%;0,200:" _
   + "LYR_?;Relative income per capita (ppp);GT;log scale;auto:" _
   + "MMV$_?;Imports of manufactures as % of GDP;G;%;auto:" _
-  + "MMEXV$_?;" _
-    + "Extra-bloc imports of manufactures as % of GDP;G;%;auto:" _
-  + "MMINV$_?;" _
-    + "Intra-bloc imports of manufactures as % of GDP;G;%;auto:" _
+  + "mu_?;Profit and rent markup;GT;%;auto:" _
 )
 
 call LoadTable(t_BRep, nBRep, _
-  "NCPE_?;Child population as % of employment;GT;%;auto:" _
-  + "NCPEF_? NCPEM_?;" _
-    + "Female and male [child population as % of employment;" _
-    + "GT;%;0,300:" _
   + "NCPN_?;Child population;GT;%;auto:" _
   + "NE_?;Employment;GT;millions;:" _
+  + "NEAEF_? NEAEM_?;" _
+    + "Female and male [employment in agriculture;GT;%;auto:" _
+  + "NEFE_?;Female share of employment;GT;%;auto:" _
+  + "NEINF_? NEINM_?;" _
+    + "Female and male [employment in industry" _
+    + " as % of non-agricultural employment;GT;%;auto:" _
   + "NER_?;Employment rate;GT;%;auto:" _
-  + "NEFM_?;Female employment as % of male employment;GT;%;auto:" _ 
-  + "NERM_? NERF_?;Male and female [employment" _
-    + " as % of adult population;GT;%;auto:" _  
-  + "NIM_?;Net migration;GT;millions;auto:" _
+  + "NERYF_? NERYM_?;" _
+    + "Female and male [youth employment rate;GT;%;10,90:" _
+  + "NERVF_? NERVM_?;" _
+    + "Female and male [adult employment rate;GT;%;10,100:" _
+  )
+  
+call LoadTable(t_BRep, nBRep, _
+  "NIM_?;Net migration;GT;millions;auto:" _
   + "NIME_?;Net migration as % of employment;GT;%;auto:" _
   + "NLGV_?;Government sector net lending as % of GDP;" _
     + "G;%;-15,15:" _
   + "NLGV_? NLPV_?;Government and private [net lending" _
     + " as % of GDP;GT;%;-15,15:" _
+  + "NLNVF_? NLNVM_?;" _
+    + "Female and male " _
+    + "[adult labour force as % of population;" _
+    + "GT;%;0,100:" _
+  + "NLNYF_? NLNYM_?;" _
+    + "Female and male " _
+    + "[youth labour force as % of population;" _
+    + "GT;%;0,100:" _
   + "NLPV_?;Private sector net lending as % of GDP;G;%;-15,15:" _
   + "NOPN_?;Old age population;GT;%;auto:" _
-  + "NWPN_?;Working age population;GT;%;auto:" _
+  + "NUL_?;Unemployment as % of labour force;GT;%;0,30:" _
+  + "NULVF_? NULVM_?;" _
+    + "Female and male [adult unemployment rate;" _
+    + "GT;%;0,30:" _
+  + "NULYF_? NULYM_?;" _
+    + "Female and male [youth unemployment rate;" _
+    + "GT;%;0,50:" _
   + "NURN_?;Urban population;GT;%;auto:" _
+  + "NWPN_?;Working age population;GT;%;auto:" _
   + "NXV$_?;Net external assets as % of GDP;G;%;auto:" _
-)
+  )
 
 call LoadTable(t_BRep, nBRep, _
-  "pi_? pvi_?;" _
-    + "Price inflation and cost inflation;GT;%;-5,60:" _
+  + "pi_?;Price inflation;GT;%;-5,30:" _
+  + "pvi_?;Cost inflation;GT;%;-5,30:" _
+  + "pvi_? pi_?;Cost and price [inflation;G;%;-5,30:" _
   + "pkp_?;Valuation of capital stock;GT;%;auto:" _
   + "pxm_? pmm_?;Relative prices of] exports and imports" _
     +  " [of manufactures;GT;index;0,2:" _
-  + "R$_? NX$_?;Reserves and net external assets;G;million $" _
-    + %base + " prices;auto:" _
-  + "RMLX$_?;Reserves as % of liabilities plus annual" _
-    + " imports;GT;%;auto:" _
-  + "rpkp_?;Valuation ratio for capital stock brought forward;" _
-    + "GT;ratio;0.8,1.2:" _
-  + "RRF_?;Bank reserves as % of lending;GT;%;0,100:" _
-  + "rx_?;Real exchange rate;GT;index;auto:" _
+  + "RALX$_?;External asset/liability ratio;GT;%;0,300:" _
+  + "RMX$_?;Reserves as % of annual imports;GT;%;auto:" _
+  + "rtx_?;Indirect taxes less subsidies;GT;%;auto:" _
+  + "rx_?;Real exchange rate;GT;index;0,3:" _
   + "rxna_?;Nominal exchange rate revaluation /" _
     + " devaluation;GT;%;auto:" _
-  + "RV$_?;Exchange reserves as % of GDP;G;%;auto:" _
-  + "RV$_? NXV$_?;Exchange reserves and net external assets" _
-    + " [as % of GDP;GT;%;auto" _
-)
+  )
 
 call LoadTable(t_BRep, nBRep, _
   "SPV_?;Private saving as % of GDP;G;%;0,50:" _
@@ -1398,35 +1612,45 @@ call LoadTable(t_BRep, nBRep, _
     + "%;0,50:" _
   + "SXMM_?;Exports of manufactures as % of world total;" _
     + "GT;%;auto:" _
-  + "SXMMEX_?;Extra-bloc exports of manufactures" _
-    + " as % of world total;GT;%;auto:" _
   + "TBV$_?;Trade balance as % of GDP;GT;%;-15,15:" _
   + "tt_?;Terms of trade impact on income;GT;index;0.7,1.3:" _
-  + "ucx$_?;Unit cost of exports;GT;index;auto:" _
+  + "ucx$_?;Unit cost of exports;GT;index;0,3:" _
+  + "ulc$_?;Unit labour cost;GT;world pp;auto:" _
+  + "uva$_?;Unit factor cost;GT;world pp;auto:" _
   + "VN0_? VN_?;GDP per capita at] market rates and ppp rates;" _
     + "GT;$ " + %base + ";auto:" _
   + "VNE_?;GDP per person employed at ppp rates;GT;$ " _
     + %base + ";auto:" _
+  )
+  
+call LoadTable(t_BRep, nBRep, _
+  "VVAV_?;GDP in agriculture as % of GDP;GT;%;auto:" _
+  + "VVEV_?;GDP in extraction and utilities as % of GDP;" _
+    + "GT;%;auto:" _
+  + "VVIV_?;GDP in industry as % of GDP;GT;%;auto:" _
+  + "VVSV_?;GDP in services as % of GDP;GT;%;auto:" _
+  + "VVIE_? VVAE_?;" _
+    + "GDP in] industry and agriculture [per person employed;" _
+    + "GT;$ ppp " + %base + ";0,100000:" _
+  + "VVSE_? VVIE_?;" _
+    + "GDP in] services and industry [per person employed;" _
+    + "GT;$ ppp " + %base + ";auto:" _
+  + "VVEME_?;Average annual earnings;" _
+    + "GT;$ ppp;auto:" _
+  + "VVEMV_?;Income from employment as % of GDP;GT;%;auto:" _
+  + "VVPRV_?;Profits and rent as % of GDP;GT;%;auto:" _
   + "VVT_?;Capacity utilization;GT;%;-10,10:" _
-  + "WPV_? NDV_?;Wealth and domestic assets" _
-    + " [as % of GDP;GT;%;150,850:" _ 
-  + "XAV$_? MAV$_?;Exports and imports [of primary commodities" _
-    + " as % of GDP;GT;%;auto:" _
-  + "XEV$_? MEV$_?;Exports and imports [of fuels as % of GDP;GT;" _
-    + "%;auto:" _
-  + "XITV$_? MITV$_?;Income and transfer] credits and debits" _
-    + " [as % of GDP;GT;%;auto:" _
-  + "XMM_?;Exports of manufactures as % of imports;GT;%;auto:" _
-  + "XMMIN_?;Intra-bloc imports of manufactures as % of total;" _
-    + "G;%;auto:" _
-  + "XMV$_?;Exports of manufactures as % of GDP;G;%;auto:" _
-  + "XMV$_? MMV$_?;Exports and imports [of manufactures" _
-    + " as % of GDP;GT;%;auto:" _
+  + "VVTXV_?;Indirect taxes less subsidies as % of GDP;GT;%;auto:" _
+  )
+
+call LoadTable(t_BRep, nBRep, _
+  "XMV$_?;Exports of manufactures as % of GDP;G;%;auto:" _
   + "XSV$_? MSV$_?;Exports and imports [of services" _
     + " as % of GDP;GT;%;auto:" _
   + "YGV_?;Government income as % of GDP;GT;%;auto:" _
   + "YGV_? GV_?;Government] income and expenditure" _
     + " [as % of GDP;G;%;auto:" _
+  + "YGDV_?;Direct taxes less transfers as % of GDP;GT;%;-10,30:" _
   + "YN_?;Income per capita at ppp rates;GT;$ ppp;auto:" _
   + "YN$_?;Income per capita at market rates;GT;$ wpp;auto" _
 )
@@ -1438,11 +1662,17 @@ call LoadTable(t_BVar, nBVar, _
   "H;Domestic spending;$m ppp;0:" _
   + "V;GDP at base-year pp rates;$m ppp;0:" _
   + "V0;GDP at base-year market rates;$m " + %base + ";0:" _
-  + "VV;Purchasing power of GDP;$m ppp;0:" _
   + "VVT;Capacity utilization;%;2:" _
   + "tt;Terms of trade impact on income;index;3:" _
-  + "VV;GDP purchasing power at domestic prices;$m ppp;0:" _
+  + "VV;Income from GDP;$m ppp;0:" _
   + "VV$;GDP purchasing power at world prices;$m wpp;0:" _
+  + "VVA;GDP in agriculture;$m ppp;0:" _
+  + "VVE;GDP in extraction and utilities;$m ppp;0:" _
+  + "VVI;GDP in industry;$m ppp;0:" _
+  + "VVS;GDP in services;$m ppp;0:" _
+  + "VVEM;Labour and mixed income;$m ppp;0:" _
+  + "VVPR;Profits and rent;$m ppp;0:" _
+  + "VVTX;Indirect taxes less subsidies;$m ppp;0:" _
   + "Y;Income at ppp rates;$m ppp;0:" _
   + "Y$;Income at market rates;$m wpp;0:" _
   + "N;Population;m;0:" _
@@ -1452,6 +1682,7 @@ call LoadTable(t_BVar, nBVar, _
   + "YN;Income per capita at ppp rates;$ ppp;0:" _
   + "YN$;Income per capita at market rates;$ wpp;0:" _
   + "YG;Government income;$m ppp;0:" _
+  + "YGD;Direct taxes less transfers;$m ppp;0:" _
   + "G;Government expenditure on goods & services;$m ppp;0:" _
   + "NLG;Government net lending;$m ppp;0:" _
   + "IAG;Government net acquisition of assets;$m ppp;0:" _
@@ -1464,17 +1695,40 @@ call LoadTable(t_BVar, nBVar, _
   + "NLP;Private net lending;$m ppp;0:" _
   + "KP;Capital stock;$m ppp;0:" _
   + "WP;Wealth;$m ppp;0:" _
-  + "NE;Employment;m;0:" _
+  + "NCP;Population 0-14;m;1:" _
+  + "NWP;Population 15-64;m;1:" _
+  + "NOP;Population 65+;m;1:" _
+  + "NYF;Female population 15-24 ;m;1:" _
+  + "NYM;Male population 15-24;m;1:" _
+  + "NVF;Female population 25+;m;1:" _
+  + "NVM;Male population 25+;m;1:" _
+  + "NUR;Urban population;m;1:" _
+  + "NIM;Net migration;m;1:" _
+)
+  
+call LoadTable(t_BVar, nBVar, _
+  "NE;Employment;m;1:" _
+  + "NEYF;Female employment 15-24 ;m;1:" _
+  + "NEYM;Male employment 15-24;m;1:" _
+  + "NEVF;Female employment 25+;m;1:" _
+  + "NEVM;Male employment 25+;m;1:" _
   + "NER;Employment rate;%;2:" _
-  + "NWP;Working age population;m;0:" _
-  + "NOP;Old age population;m;0:" _
-  + "NCP;Child population;m;0:" _
-  + "NUR;Urban population;m;0:" _
-  + "NIM;Net migration;m;0:" _  
-  + "JHD;Human development index;%;0:" _
-  + "JIM;Infant mortality rate;per 1000;0:" _
-  + "JLX;Life expectancy at birth;years;0:" _
-  + "JGN;Internal Gini index;%;1:" _
+  + "NL;Labor force;m;1:" _
+  + "NLYF;Female labor force 15-24;m;1:" _
+  + "NLYM;Male labor force 15-24;m;1:" _
+  + "NLVF;Female labor force 25+;m;1:" _
+  + "NLVM;Male labor force 25+;m;1:" _
+  + "NU;Unemployment;m;1:" _
+  + "NUYF;Female unemployment 15-24t;m;1:" _
+  + "NUYM;Male unemployment 15-24;m;1:" _
+  + "NUVF;Female unemployment 25+;m;1:" _
+  + "NUVM;Male unemployment 25+;m;1:" _
+  + "NEAF;Female employment in agriculture;m;1:" _
+  + "NEAM;Male employment in agriculture;m;1:" _
+  + "NEIF;Female employment in industry;m;1:" _
+  + "NEIM;Male employment in industry;m;1:" _
+  + "NESF;Female employment in services;m;1:" _
+  + "NESM;Male employment in services;m;1:" _
 )
 
 call LoadTable(t_BVar, nBVar, _
@@ -1482,16 +1736,20 @@ call LoadTable(t_BVar, nBVar, _
   + "irm;Real bond rate;% p.a.;2:" _
   + "is;Nominal short rate;% p.a.;2:" _
   + "im;Nominal bond rate;% p.a.;2:" _
-  + "pvi;Cost inflation;% p.a.;1:" _
-  + "tt;Terms of trade impact on income;index;3:" _
   + "pi;Price inflation;% p.a.;1:" _
+  + "pvi;Cost inflation;% p.a.;1:" _
+  + "ei;Earnings inflation;% p.a.;1:" _
+  + "mu;Profit and rent markup;%;2:" _
+  + "rtx;Indirect taxes less subsidies;%;2:" _
   + "pmm;Real price of imports of manufactures;index;4:" _
   + "pxm;Real price of exports of manufactures;index;4:" _
   + "rx;Real exchange rate;index;4:" _
   + "rxna;Nominal exchange rate change;% p.a.;3:" _
   + "ucx$;Real unit cost of exports;index;4:" _
-  + "EP;Energy production;mtoe;0:" _
-  + "ED;Energy demand;mtoe;0:" _
+  + "EP;Primary energy production;mtoe;0:" _
+  + "EPC;Primary carbon energy production;mtoe;0:" _
+  + "EPN;Primary non-carbon energy production;mtoe;0:" _
+  + "ED;Primary energy use;mtoe;0:" _
   + "BA$;Balance in primary commodities;$m wpp;0:" _
   + "BE$;Balance in fuels;$m wpp;0:" _
   + "BM$;Balance in manufactures;$m wpp;0:" _
@@ -1500,7 +1758,7 @@ call LoadTable(t_BVar, nBVar, _
   + "MA$;Imports of primary commodities;$m wpp;0:" _
   + "XE$;Exports of fuels;$m wpp;0:" _
   + "ME$;Imports of fuels;$m wpp;0:" _
-)
+  )
   
 call LoadTable(t_BVar, nBVar, _
   "XM$;Exports of manufactures;$m wpp;0:" _
@@ -1516,7 +1774,7 @@ call LoadTable(t_BVar, nBVar, _
   + "LX$;External liabilities;$m wpp;0:" _
   + "NX$;Net external assets;$m wpp;0:" _
   + "R$;Exchange reserves;$m wpp;0:" _
-)
+  )
 
 call LoadTable(t_BVar, nBVar, _
   + "_V;GDP in current $;$m;0:" _
@@ -1536,17 +1794,18 @@ call LoadTable(t_BVar, nBVar, _
   + "_LGO;Government debt to non-financial agents in current $;$m;0:" _
   + "_LN;Bank lending to private sector in current $;$m;0:" _
   + "_DP;Bank liabilities to private sector in current $;$m;0" _
-)
-
+  )
+ 
 '--- standard analysis tables
 table t_TDef
 scalar nTDef = 0
-call pTabDef(t_Tdef, nTDef)
+call pTabDef(t_TDef, nTDef)
 
 '--- generate standard outputs
 
 %tlopt = ""
 if @upper(@left(%graphs,1)) = "Y" then %tlopt = "G" endif
+if @upper(@left(%subgraphs,1)) = "Y" then %tlopt = %tlopt + "S" endif
 if @upper(@left(%tables,1)) = "Y" then %tlopt = %tlopt + "T" endif
 if @upper(@left(%analysis,1)) = "Y" then %tlopt = %tlopt + "A" endif
 if @upper(@left(%csv,1)) = "Y" then %tlopt = %tlopt + "C" endif

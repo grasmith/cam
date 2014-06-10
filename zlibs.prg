@@ -1,24 +1,27 @@
 'LIBRARY: zlibs.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 4.6
+' CAM version 5.0
 '
 ' model solution routines
 '
-' updated: FC 25/04/2011
+' updated: FC 25/04/2013
 '
 '---------------------------------------------------------------
-' pCheckSolveReport(p_m, %p_CheckStart, %p_Horizon, %p_Solopt, p_Max)
-' pCreateScenario (%ModelName, %Alias, %Name, %tlExog)
+' pCheckSolveReport(p_m, %p_CheckStart, %p_Prior, %p_Horizon,
+'   %p_Solopt, p_Max)
+' pCreateScenario (%ModelName, %Alias)
 '---------------------------------------------------------------
 
 subroutine pCheckSolveReport(model p_m, string %p_CheckStart, _
-  string %p_Horizon, string %p_Solopt, scalar p_Max)
+  string %p_Prior, string %p_Horizon, string %p_Solopt, _
+  scalar p_Max)
 '==================================================
 'Check rules, solve and report results
 '
 ' Call: p_m            model
 '       %p_CheckStart  first year for rule check simulations
-'       %p_Horizon     horizon for solutions
+'       %p_Prior       last year before start of solution period
+'       %p_Horizon     horizon for solution period
 '       %p_Solopt      solution options
 '                       c convergence criterion (default 1e-8)
 '                       m max iterations (default 5000)
@@ -29,22 +32,51 @@ subroutine pCheckSolveReport(model p_m, string %p_CheckStart, _
 '
 '---------------------------------------------------------------
 
+'--- current simulation base year
+t_Settings(13,2) = %p_Prior
+'--- if not solving for alignment or plain baseline
+if not (t_Settings(3,2) = "" or t_Settings(3,2) = "0p") then
+'--- first-ever simulation base year (baselines)
+  if t_Settings(12,2) = "" then
+    t_Settings(12,2) = %p_Prior
+  else
+  '--- reset actuals from source solution to provide same
+  '    initial conditions  
+    if t_Settings(12,2) < %p_Prior then
+      %first = @str(@val(t_Settings(12,2))+1)
+      call CopyAliasValues("_" + t_Settings(5,2), "", %first, _
+          %p_Prior)
+  '--- or update the first-ever simulation base year
+    else
+      if %p_Prior < t_Settings(12,2) then
+        t_Settings(12,2) = %p_Prior
+      endif  
+    endif
+  endif
+endif
+
 '--- check rules and perform shock analysis if required
 call pRuleCheck(m_wm, t_Rule, nRule, %p_CheckStart)
 
 '--- generate the scenario
-%prior = t_Settings(1,2)
-%first = @str(@val(%prior)+1)
+%first = @str(@val(%p_Prior)+1)
 call pLog("solving for " + %first + "-" + %p_Horizon)
-call AddRulesToModel(t_Rule, nRule, p_m, "", %prior, %p_Horizon)
+call AddRulesToModel(t_Rule, nRule, p_m, "", %p_Prior, %p_Horizon)
+
 '--- standard solution options
 ' g rounding of results: n no rounding (default 7 digits)
 ' i initialise values: p prior period values (default a actuals)
 ' o solution method: g gauss-seidel (default b broyden)
-%s = "g=n,i=p,o=g"
+' v diagnostics: t trace (default trace)
+%s = "g=n,i=p,o=b,v=t"
 if %p_Solopt <> "" then %s = %s + "," + %p_Solopt endif
-call pLog("options " + %s)
-call SolveModel(p_m, %s, %prior, %p_Horizon)
+call SolveModel(p_m, %s, %p_Prior, %p_Horizon)
+
+'--- reset actuals from baseline
+if t_Settings(12,2) <> "" and t_Settings(12,2) < %p_Prior then
+  %first = @str(@val(t_Settings(12,2))+1)
+  call CopyAliasValues("_0", "", %first, %p_Prior)
+endif
 
 call pLog("listing exogenous variables")
 %s = t_Settings(4,2)
@@ -69,6 +101,7 @@ smpl %start %end
 
 %tlopt = ""
 if @upper(@left(%graphs,1)) = "Y" then %tlopt = "G" endif
+if @upper(@left(%subgraphs,1)) = "Y" then %tlopt = %tlopt + "S" endif
 if @upper(@left(%tables,1)) = "Y" then %tlopt = %tlopt + "T" endif
 if @upper(@left(%analysis,1)) = "Y" then %tlopt = %tlopt + "A" endif
 if @upper(@left(%csv,1)) = "Y" then %tlopt = %tlopt + "C" endif
@@ -87,6 +120,10 @@ subroutine pCreateScenario (string %ModelName, string %Alias)
 ' Ret:  %ModelName    model name
 '       %Alias        alias with prefix _ added
 '
+' Note: the model is created by renaming the template m_ds
+' loaded by opening the workfile as a copy of MDS.wf1. See
+' CreateModelFile in zlib.prg for further details.
+'
 '---------------------------------------------------------------
 
 %Alias = t_Settings(3,2)
@@ -103,7 +140,7 @@ wfsave {%s}
 call pLog("computing " + %t)
 call pLog("building the model")
 %ModelName = "m_wm" + %Alias
-model {%ModelName}
+rename m_ds {%ModelName}
 {%ModelName}.merge m_wm
 
 '--- create scenario if not baseline

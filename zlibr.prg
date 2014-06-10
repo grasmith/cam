@@ -1,6 +1,6 @@
 'PROGRAM: zlibr.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 4.6
+' CAM version 5.0
 '
 ' library routines for scenario rules
 '
@@ -8,7 +8,7 @@
 ' beginning with lib_ are reserved and should not be used
 ' elsewhere.
 '
-' updated: FC 14/09/2011
+' updated: FC 25/04/2013
 '
 '---------------------------------------------------------------
 '
@@ -244,24 +244,32 @@ for !irule = 1 to nRule
       %s = %var + "_sav+0.1*" + %grad+ "*(" _
         + %partial + "-(" + %obj + "))"
     else if %gtyp = "Ceiling" then
-      %s = "@iif("+%val+">"+%prior+","+%val+","+%partial+")"
+      if @val(%pct) < 1 then
+        %s = "@iif("+%val+">"+%prior+","+%val+","+%partial+")"
+      else
+        %s = %val
+      endif  
       %gap = "("+%s+"-("+%obj+"))"
       %over = "@iif("+%gap+"<0,-"+%gap+",0)"
       %under = "@iif("+%gap+">0,"+%gap+",0)"
-       %s = "@iif(" + %under + ">0 and " _
+      %s = "@iif(" + %under + ">0 and " _
          + %grad + "*" + %var + "_sav >= 0, 0," _
          + %var + "_sav + 0.1*" + %grad + "*(-" _
          + %over + "+0.5*" + %under + "))"
     '--- Floor
     else
-      %s = "@iif("+%val+"<"+%prior+","+%val+","+%partial+")"
+      if @val(%pct) < 1 then
+        %s = "@iif("+%val+"<"+%prior+","+%val+","+%partial+")"
+      else
+        %s = %val
+      endif
       %gap = "("+%s+"-("+%obj+"))"
       %over = "@iif("+%gap+"<0,-"+%gap+",0)"
       %under = "@iif("+%gap+">0,"+%gap+",0)"
-        %s = "@iif(" + %over + ">0 and " _
-          + %grad + "*" + %var + "_sav <= 0, 0, " _
-          + %var + "_sav + 0.1*" + %grad + "*(" _
-          + %under + "-0.5*" + %over + "))"
+      %s = "@iif(" + %over + ">0 and " _
+         + %grad + "*" + %var + "_sav <= 0, 0, " _
+         + %var + "_sav + 0.1*" + %grad + "*(" _
+         + %under + "-0.5*" + %over + "))"
     endif
     endif
   endif
@@ -667,6 +675,7 @@ subroutine local InsToAddFactors(model m, table tRule, _
 '
 '---------------------------------------------------------------
 scalar q = 0
+call pLog("converting ins to add factors")
 for !i = 1 to nRule
   %v = tRule(!i,1)
   '--- special processing for sxmu bloc-level adjuster
@@ -677,30 +686,15 @@ for !i = 1 to nRule
       %s = %v + "_" + %b
       call Exists(%s, q)
       if q then
-        call zAddAssign(m, %s)
         call CreateSeries(%s + "_a = " + %v + "_ins")
       endif
     next
   '--- other instrument adjustments match a single variable
   else
-    call zAddAssign(m, %v)
     call CreateSeries(%v + "_a = " + %v + "_ins")
   endif
   call CreateSeries(%v + "_ins = 0")
 next
-endsub
-
-subroutine zAddAssign(model p_m, string %p_Var)
-'==============================================================
-'assign an add factor
-'
-' Call: p_m     model
-'       %p_Var  variable to which the add factor is assigned
-'
-' Ret:
-'
-'---------------------------------------------------------------
-p_m.addassign(c,i) {%p_Var}
 endsub
 
 subroutine Limit(scalar vPr, string %tlVar)
@@ -1157,6 +1151,145 @@ for !liblib_i = 1 to nBloc
     t_Rule, nRule, {%p_Tab}_{%liblib_b}, %p_Alias, _
     %p_First, %p_Last, p_Max)
 next
+
+'=== call RuleTableCSV(t_Rule, nRule, _
+'           %p_Alias, %p_First, %p_Last, p_Max)
+
+endsub
+
+subroutine RuleTableCSV(table p_tRule, scalar p_nRule, _
+  string %p_Alias, string %p_First, string %p_Last, _
+  scalar p_Max)
+'==============================================================
+'write a table describing outcome of scenario rules
+'
+' Call: %p_Alias    scenario alias with _ if relevant
+'       %p_First    first solution year
+'       %p_Last     last solution year
+'       p_Max       max data columns
+'
+' Ret:  
+'
+'---------------------------------------------------------------
+table lib_tRes
+
+'--- header lines
+!nc0 = 1
+!ir =1
+for !liblib_i = 1 to nBloc
+  %p_Bloc = t_Bloc(!liblib_i, 1)
+  %p_BlocName = t_Bloc(!liblib_i, 2)
+
+%b = "_" + @upper(%p_Bloc)
+
+'--- select years to list
+vector vyr
+!nyr = 1
+call YearList(%p_First, %p_Last, p_Max, vyr, !nyr)
+!ncol = !nyr + !nc0
+
+'--- write year headers
+for !j = !nc0+1 to !ncol
+  setcell(lib_tRes,2,!j, @str(vyr(!j-!nc0)), "r")
+next
+!n = !nc0 + 1
+lib_tRes.setwidth(!n:!ncol) 9
+'!ir = 1
+
+'--- loop through rules
+!ick = 1
+!v = 0
+!vpr = 0
+vector(3) vr
+for !i = 1 to p_nRule
+  '--- instrument for this bloc
+  %vins = p_tRule(!i,1)
+  
+  if @instr(@upper(%vins), %b) > 0 and !ick = 1 then
+  '--- header
+    setcell(lib_tRes,!ir,1,"Rules for " + %p_BlocName,"l")
+    lib_tRes.setwidth(1) 20
+    !ick = 2
+  endif
+  if @instr(@upper(%vins), %b) > 0 then
+    %var = p_tRule(!i,1)
+    %gtyp = p_tRule(!i,2)
+    %obj = p_tRule(!i,3)
+    %val = @trim(p_tRule(!i,4))
+    if %gtyp = "Shock" then
+      %obj = %var
+    endif
+    '--- Link to instrument in other bloc
+    if %gtyp = "Link" then
+      if @instr(@upper(%obj), %b) = 0 then
+        !ir = !ir + 2
+        setcell(lib_tRes,!ir,1,"Instrument linked to " + %obj,"l")
+      endif
+    '--- rules with targets
+    else
+      !ir =!ir + 2
+      %s = %gtyp + " " + %obj
+      setcell(lib_tRes,!ir,1, %s,"l")
+      setcell(lib_tRes,!ir+1,1,"  Target values","l")
+      setcell(lib_tRes,!ir+2,1,"  Actual values","l")
+      setcell(lib_tRes,!ir+3,1,"  Difference ","l")
+      setcell(lib_tRes,!ir+5,1,"Instruments","l")
+
+      '--- get an expression for the target value
+      if @instr(%val," ") > 0 then
+        %val = %var + "_val"
+      endif
+      for !j = 1 to !nyr
+        '--- target value
+        call Eval(%val, @str(vyr(!j)), !v)
+        vr(1) = !v
+        '--- actual value
+        if %gtyp = "Fix" then
+          call ScenarioExpr(%var, %p_Alias, %v)
+        else
+          call ScenarioExpr(%obj, %p_Alias, %v)
+        endif
+        call Eval(%v, @str(vyr(!j)), !v)
+        vr(2) = !v
+        '--- difference
+        vr(3) = vr(1) - vr(2)
+        for !k = 1 to 3
+          call XFormat(vr(!k), 4, %s)
+          setcell(lib_tRes,!ir+!k,!j+1, %s, "r")
+        next
+      next
+      !ir = !ir + 5
+    endif
+    '--- instrument value and probability
+    !ir = !ir + 1
+    setcell(lib_tRes,!ir,1,"  " + %vins + "_ins","l")
+    setcell(lib_tRes,!ir+1,1,"     p-value","l")
+
+    if %gtyp = "Shock" then
+      if p_tRule(!i,3) = "A" then
+        %var = %vins + "_a"
+        setcell(lib_tRes,!ir,1,"  " + %vins + "_a","l")
+      else
+        %var = %vins + "_ins"
+      endif
+    else
+      %var = %vins + "_ins" + %p_Alias
+    endif
+    for !j = 1 to !nyr
+      call Eval(%var, @str(vyr(!j)), !v)
+      call XFormat(!v, 4, %s)
+      setcell(lib_tRes,!ir, !j+1, %s, "r")
+      call CalcProb(%vins, !v, !vpr)
+      %s = "("+@str(!vpr, "f.3")+")"
+      setcell(lib_tRes,!ir+1, !j+1, %s, "r")
+    next
+    !ir = !ir + 1
+  endif
+next
+ !ir = !ir + 2
+next
+
+lib_tRes.save(t = csv) RuleTable{%p_Alias}
 endsub
 
 subroutine local zRuleTable(string %p_Bloc, string %p_BlocName, _

@@ -1,6 +1,6 @@
 'LIBRARY: zlib.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 4.6
+' CAM version 5.0
 '
 ' library routines
 '
@@ -8,7 +8,7 @@
 ' beginning with lib_ are reserved and should not be used
 ' elsewhere.
 '
-' updated: FC 17/05/2012
+' updated: FC 11/04/2013
 '
 '---------------------------------------------------------------
 ' Adjusted(%Var, %Name)
@@ -18,10 +18,13 @@
 ' AssignSeries(%Var, %Val, %First, %Last)
 ' BlocCreateSeries(%Scope, %tlSpec, %Alias)
 ' BlocEval(%Scope, %tlSpec, %Alias)
-' BlocName(%Bloc, %Name)
 ' BlocList(%Expr, %Sep, %tlBloc, %Result)
+' BlocMem(%Group, %tlBloc)
+' BlocMinVal(%Scope, %tlVar)
+' BlocName(%Bloc, %Name)
 ' CopyAliasValues(%Source, %Dest, %First, %Last)
 ' CountTokens(%t, %a, n)
+' CreateModelFile(%Source, %File)
 ' CreateSeries(%Var)
 ' DeleteObjects(%List)
 ' DerivedSeries(%First, %Last, %Alias)
@@ -468,6 +471,65 @@ wend
 %p_Result = %t
 endsub
 
+subroutine BlocMem(string %p_Group, string %p_tlBloc)
+'==================================================
+'List blocs that are members of a group
+'
+' Call: %p_Group   group name
+'
+' Ret:  %p_tlBloc  member blocs or blank
+'
+'---------------------------------------------------------------
+for !lib_i = 1 to nArea
+  if t_Bloc(!lib_i, 1) = %p_Group then
+    %p_tlBloc = t_Bloc(!lib_i, 3)
+    return
+  endif  
+next
+%p_tlBloc = ""
+endsub
+
+subroutine BlocMinVal(string %p_Scope, string %p_tlVar)
+'==================================================
+'Set minimum values for a series
+'
+' Call: %p_Scope   B BW BG GW or BGW  (bloc, group and/or world)
+'       %p_tlVar   list of var minval pairs separated by comma
+'
+' Ret:
+'
+'---------------------------------------------------------------
+!lib_is = 1
+!lib_ie = 1
+call zScope(%p_Scope, !lib_is, !lib_ie)
+for !lib_i = !lib_is to !lib_ie
+  call zBlocMinVal(t_Bloc(!lib_i, 1), %p_tlVar)
+next
+endsub
+
+subroutine local zBlocMinVal(string %p_geo, string %p_tlvar)
+'==================================================
+'Set minimum values for a list of geo variables
+'
+' Call: %p_geo     geo (bloc, group or world)
+'       %p_tlvar   list of var minval pairs separated by comma
+'
+' Ret:
+'
+'---------------------------------------------------------------
+%tl = %p_tlvar
+'--- loop for multiple assigns
+while 1=1
+  call Token(%tl, ",", %val)
+  if %val = "" then exitloop endif
+  call Token(%val, " ", %var)
+  %var = %var + "_" + %p_geo
+  %minval = "@recode(" + %var + "<" + %val + "," _
+    + %val + "," + %var + ")"
+  call AssignSeries(%var, %minval, "", "")
+wend
+endsub
+
 subroutine BlocName(string %Area, string %Name)
 '==================================================
 'Look up the name of a bloc, bloc group or world as whole
@@ -509,6 +571,13 @@ subroutine CopyAliasValues(string %Source, string %Dest, _
 '
 '---------------------------------------------------------------
 if %Source = "" or %First > %Last then return endif
+if %Dest = "" then
+  %lib_s = "actuals"
+else
+  %lib_s = %Dest
+endif
+call pLog("copying " + %lib_s + " for " + %First _
+  + " - " + %Last + " from " + %Source)
 smpl %First %Last
 !lib_n2 = @strlen(%Source)
 group lib_g *{%Source}
@@ -548,6 +617,43 @@ while 1
   if %r = "" then exitloop endif
   p_n = p_n + 1
 wend
+endsub
+
+subroutine CreateModelFile(string %p_Source, string %p_File)
+'==================================================
+'create workfile with model and data from source
+'
+' Call: %p_Source  workfile with source data
+'       %p_File    name of new workfile
+'
+' Ret:  
+'
+' Note: EViews 6 problem
+' i) the default for deterministic simulation is to carry forward AR
+' residuals from the last actual value. There is a bug in
+' the implementation as it picks up any add factor value and bundles
+' this with the residual carried forward. The unintended outcome is
+' that model solutions starting at different years generate different
+' results even if all conditions are identical.
+' ii) this bug can be avoided by specifying the option Structural
+' (ignore ARMA) in a check box on the Solve dialog. When this option
+' is selected prior residuals or add factors are not carried forward
+' into the solution period.
+' iii) we have to create a model manually to specify the Structural
+' option as no command is available to set the option programatically.
+' iv) if the model object is copied it loses the property. Therefore
+' it is necessary to use the manually-created model and the workfile
+' that contains it every time, copying data from GPM source workfiles
+' into the new workfile.
+'
+'---------------------------------------------------------------
+open {%p_Source}
+shell copy MDS.wf1 {%p_File}.wf1
+open {%p_File}.wf1
+copy {%p_Source}::data\*
+close {%p_Source}
+delete sp_log*
+t_Settings(7,2) = %p_File
 endsub
 
 subroutine CreateSeries(string %p_Var)
@@ -624,7 +730,7 @@ if %p_Alias <> "" and %p_First > %p_Start then
   next
   '--- Gini coefficient for income
   call CreateSeries("GY" + %p_Alias + " = GY")
-  call CreateSeries("rylow" + %p_Alias + " = rylow")
+  call CreateSeries("rylow_w" + %p_Alias + " = rylow_w")
   '--- Theil measures
   for !j = 1 to p_nT
     %v = p_tT(!j, 1)
@@ -633,12 +739,12 @@ if %p_Alias <> "" and %p_First > %p_Start then
 endif
 
 '--- Gini coefficient for income
-call Gini("Y", "N", "GY", "rylow", %p_Alias, _
+call Gini("Y", "N", "GY", "rylow_w", %p_Alias, _
           %p_First, %p_Last)
 
 '--- generate new values for the Scenario period
 smpl %p_First %p_Last
-	  
+
 '--- result specifications
 for !j = 1 to p_nR
   call BlocEval(p_tR(!j, 1), p_tR(!j, 2), %p_Alias)
@@ -1047,7 +1153,7 @@ if not @isobject("sp_log") then
   t_log.setwidth(1) 20
   t_log.setwidth(2) 60
   setcell(t_log,1,1,@strnow("YYYY-MM-DD HH:MI:SS"),"l")
-  setcell(t_log,1,2,%sysTitle + " (" + %model + %alignmethod + ")","l")
+  setcell(t_log,1,2,%sysTitle + " (" + %model + ")","l")
   print t_log
 endif
 setcell(t_log,1,1,@strnow("YYYY-MM-DD HH:MI:SS"),"l")

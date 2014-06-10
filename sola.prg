@@ -1,6 +1,6 @@
-'PROGRAM: sola.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: sola.prg       Copyright (C) 2012,2013 Alphametrics Co. Ltd.
 '
-' CAM version 4.6      WEO alignment
+' CAM version 5.0      WEO alignment
 '
 ' Align the model to match values loaded from ALIGN.XLS
 '
@@ -8,21 +8,19 @@
 '      %loadfrom (in OPTIONS below)  <=  %latest  (defined in set.prg)
 ' up to at least the alignment end year
 '      %align  (also defined in set.prg)
-' The first observation for the world oil price sheet is at cell G15
-' and for the bloc data sheet at cell O4.
 '
 ' Aligns the model with estimates for the world oil price, bloc GDP
 ' in current and base-year dollars, current accounts and nominal
 ' exchange rate changes
 '
 ' Run this program after est.prg (equation estimation)
-' and before sol0.prg (baseline projection)
+' and before sol0p.prg (plain baseline projection)
 '
 ' The program reads EST.wf1 and writes SOLA.wf1
 '
 ' Results are recorded as actuals
 '
-' updated: FC 15/04/2012
+' updated: FC 08/05/2013
 '
 '==================================================================
 ' OPTIONS
@@ -32,8 +30,8 @@ call sola
 '------------------------------------------------------------------
 subroutine sola
 
-'--- first year of alignment data in ALIGN.XLS
-%loadfrom = "2007"
+'--- alignment horizon
+%align = "2014"
 
 '--- decay rate for add factors beyond the alignment horizon
 !vdecay = 0.6
@@ -48,22 +46,13 @@ subroutine sola
 ' PREFACE
 '==================================================================
 mode quiet
-'--- open the estimation workfile
-open EST
-pageselect tables
-delete *
-pageselect graphs
-delete *
-pageselect data
-delete sp_log*
+%wkfile = "SOLA"
+call CreateModelFile("EST", %wkfile) 
 
 '--- update settings
-call pLog("SOLA PROGRAM v0415")
-%wkfile = "SOLA"
+call pLog("SOLA PROGRAM v0805")
 t_Settings(3,2) = ""
 t_Settings(4,2) = "WEO alignment"
-t_Settings(7,2) = %wkfile
-%gm = "m_wma"
 
 '--- preprocessing
 table t_Rule
@@ -79,12 +68,9 @@ call pLog("building the model")
 '--- build the core model (zdef.prg)
 smpl %start %end
 call pDefineModel
-model m_wm
-m_wm.merge m_wmi
-m_wm.merge m_wmo
-
-'--- create a scenario model
-model {%gm}
+'--- create the alignment model
+%gm = "m_wma"
+rename m_ds {%gm}
 {%gm}.merge m_wm
 {%gm}.scenario "actuals"
 %alias = ""
@@ -93,29 +79,45 @@ model {%gm}
 ' DEFINITIONS
 '==================================================================
 
+'    EViews bug: if add factors are not defined at the bottom level
+'                they are lost when the workfile is saved and reloaded
+'    Solution: define add factors at the bottom level for all variables
+m_wmi.addassign @stochastic
+m_wmo.addassign @stochastic
+
 smpl %latest+1 %align
 
-'--- reduced trend growth of carbon energy supply in US, Europe and China
-EPC_US_ins =  -0.005
+'--- reduced trend growth of carbon energy supply in Europe and China
+EPC_PL_ins = -0.01
 EPC_EUW_ins = -0.01
-EPC_EUE_ins = -0.01
 EPC_UK_ins = -0.01
-EPC_EUN_ins = -0.03
+EPC_EUN_ins = -0.01
 EPC_CN_ins = -0.02
+
+'--- nuclear energy supply
+'    reduced trends in US, CA, CN, CIS and FR
+EPN_US_ins = -0.02
+EPN_OD_ins = -0.03
+EPN_CN_ins = -0.02
+EPN_CI_ins = -0.03
+EPN_FR_ins = -0.02
+'    Japan: 2012 closedown and gradual, partial restart
+EPN_JA_ins = 0
+EPN_JA_ins.fill(s) -2.3
 
 smpl %latest+1 %end
 
 '==================================================================
 ' LOAD TARGETS
 '==================================================================
-%s = %loadfrom + "-" + %align
-call pLog("reading targets from align.xls for " + %s)
-smpl %loadfrom %align
+call pLog("reading targets from align.xls")
 '--- oil price
-read(t=xls,s=World oil price,t,g15) align.xls 1
+smpl 2008 %align
+read(t=xls,s=UNCTAD,t,f6) align.xls 1
 '--- bloc data
+smpl 2008 %align
 !n = 28*nBloc
-read(t=xls,s=Bloc data,t,o4) align.xls !n
+read(t=xls,s=WEO bloc data,t,n4) align.xls !n
 delete ser*
 
 '--- create target series
@@ -133,19 +135,20 @@ delete pew$_e
 for !i = 1 to nBloc
   %b = t_Bloc(!i, 1)
   '--- link the estimates to latest data
-  V0_{%b} = V0_e_{%b} _
-    * @elem(V0_{%b},%latest)/@elem(V0_e_{%b},%latest)
-  _V_{%b} = _V_e_{%b} _
-    * @elem(_V_{%b},%latest)/@elem(_V_e_{%b},%latest)
+  V0_{%b} = APT0_e_{%b} _
+    * @elem(V0_{%b},%latest)/@elem(APT0_e_{%b},%latest)
+  _V_{%b} = APT_e_{%b} _
+    * @elem(_V_{%b},%latest)/@elem(APT_e_{%b},%latest)
   '--- convert GDP targets to % growth for uniform scaling
   _V_tar_{%b} = @pc(_V_{%b})
   V0_tar_{%b} = @pc(V0_{%b})
   '--- set other targets directly
-  _CA_tar_{%b} = 1000*_CA_e_{%b} _
-    + @elem(_CA_{%b},%latest) - 1000*@elem(_CA_e_{%b},%latest)
-  rxna_tar_{%b} = rxna_e_{%b}
+  _CA_tar_{%b} = 1000*BCA_e_{%b} _
+    + @elem(_CA_{%b},%latest) - 1000*@elem(BCA_e_{%b},%latest)
+  rxna_tar_{%b} = 100*(APT_E_{%b}*APT0_E_{%b}(-1) _
+                     /(APT_E_{%b}(-1)*WNGR_E_{%b})-1)
 next
-delete V0_e_* _V_e_* _CA_e_* rxna_e_*
+delete APT0_e_* APT_e_* BCA_e_* WNGR_e_*
 
 '==================================================================
 ' DEFINE ADJUSTMENT RULES
@@ -163,7 +166,7 @@ call Link("EPC_AFS","EPC_WA",0.5)
 for !i = 1 to nBloc
   %b = t_Bloc(!i, 1)
   '--- adjust consumption and investment to get real GDP [1000]
-  call Target("IP_"+%b,"@pc(V0_"+%b+")","V0_tar_"+%b,50,100)
+  call Target("IP_"+%b,"@pc(V0_"+%b+")","V0_tar_"+%b,1000,100)
   if %b = "cn" then
     call Link("pkp_"+%b,"IP_"+%b,0.3)
     call Link("SP_"+%b,"IP_"+%b,-0.3)
@@ -172,17 +175,17 @@ for !i = 1 to nBloc
     call Link("SP_"+%b,"IP_"+%b,-0.8)
   endif
 
-  '--- adjust US domestic inflation to fix dollar GDP [100]
+  '--- adjust US domestic inflation to fix dollar GDP
   if %b = "us" then
-    call Target("pvi_us","@pc(_V_us)","_V_tar_us",100,100)
+    call Target("ei_us","@pc(_V_us)","_V_tar_us",100,100)
   else
     '--- fix dollar GDP by adjusting real exchange rates [300]
-    call Target("rxu_"+%b,+ "@pc(_V_"+%b+")","_V_tar_"+%b,100,100)
+    call Target("rxu_"+%b,+ "@pc(_V_"+%b+")","_V_tar_"+%b,300,100)
     '--- adjust domestic inflation to fix nominal xrate changes [-100]
-    call Target("pvi_"+%b,"rxna_"+%b,"rxna_tar_"+%b,-100,100)
+    call Target("ei_"+%b,"rxna_"+%b,"rxna_tar_"+%b,-100,100)
   endif
-  '--- adjust current accounts with EUW as the residual [100]
-  if %b <> "euw" then
+  '--- adjust current accounts with CN as the residual
+  if %b <> "cn" then
     %s = "sxmu_" + %b
     call Target(%s,"100*_CA_"+%b+"/_V_"+%b+"(-1)", _
       "100*_CA_tar_"+%b+"/_V_"+%b+"(-1)",100,100)
@@ -211,23 +214,18 @@ next
 ' PROCESSING
 '==================================================================
 
-'--- record the computed observations as actuals
+'--- note: computed observations recorded as actuals
 %graphcomp = "No"
 
 call pLog("align with series loaded from ALIGN.XLS")
-
-call pCheckSolveReport({%gm}, @str(@val(%latest)-3), %align, _
-  "m=20000", 5)
-
-t_Settings(1,2) = %align
+call pCheckSolveReport({%gm}, @str(@val(%latest)-3), %latest, _
+  %align, "m=10000", 5)
 
 '--- convert instrument values to add factors
-'    EViews bug: if add factors are not defined at the bottom level
-'                they are lost when the workfile is saved and reloaded
-'    Solution: define add factors at the bottom level for all variables
-m_wmi.addassign(c,i) @stochastic
-m_wmo.addassign(c,i) @stochastic
 call InsToAddFactors(m_wm, t_Rule, nRule, t_Bloc, nBloc)
+
+'--- record alignment horizon
+t_Settings(1,2) = %align
 
 '--- decay add factors from %align + 1 to %end
 smpl %align+1 %end

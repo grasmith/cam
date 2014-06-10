@@ -1,26 +1,29 @@
 'PROGRAM: report.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 4.6
+' CAM version 5.0
 '
 ' program to create reports
 '
-' you can run this program to create reports after running
-' any data-generating program (dat.prg or solx.prg)
+' you can run this program to create reports with any CAM workfile
 '
 ' the workfile must be open and up to date before you run
-' the program
+' the program by typing   run(c) report
 '
-' select options before running the program
+' select options by adjusting code below before running the program
 '
-' execute the program by typing   run report
-'
-' updated: FC 11/01/2010
-'
-' an option has been added to compare series from another workfile
+' updated: FC 08/05/2013
 '
 '==================================================================
 ' OPTIONS
 '==================================================================
+mode quiet
+tic
+include "set"
+include "ztab"
+'------------------------------------------------------------------
+
+'--- coverage of graphs
+%repgeo = "BG"                  'blocs and bloc groups
 
 '--- range of years
 %repstart = "1980"
@@ -30,9 +33,9 @@
 '    if another workfile is specified as the source for comparisons
 '    the alias and title for copied data may not be blank and must
 '    differ from the alias and title of main data in the target
-'%wfComp = "A1SOLA"                     'source workfile or blank
+'%wfComp = "SOLA"                     'source workfile or blank
 '%scCompare = "c"                       'alias in target workfile
-'%scCompTitle = "WD alignment"          'title in target workfile
+'%scCompTitle = "Alignment"          'title in target workfile
 
 '--- output options
 %graphs = "No"
@@ -44,10 +47,6 @@
 %csv = "Yes"
 
 '==================================================================
-
-mode quiet
-tic
-include "set"
 pageselect data
 output(s) sp_log
 show sp_log
@@ -59,13 +58,20 @@ endif
 
 %tlopt = ""
 if @upper(@left(%graphs,1)) = "Y" then %tlopt = "G" endif
+if @upper(@left(%subgraphs,1)) = "Y" then %tlopt = %tlopt + "S" endif
 if @upper(@left(%tables,1)) = "Y" then %tlopt = %tlopt + "T" endif
-if @upper(@left(%analysis,1)) = "Y" then %tlopt = %tlopt + "A" endif
+if @upper(@left(%analysis,1)) = "Y" then
+  delete t_TDef
+  table t_TDef
+  nTDef = 0
+  call pTabDef(t_TDef, nTDef)
+  %tlopt = %tlopt + "A"
+endif
 if @upper(@left(%csv,1)) = "Y" then %tlopt = %tlopt + "C" endif
 if @upper(@left(%markets,1)) = "Y" then %tlopt = %tlopt + "M" endif
 !qgraphcomp = @upper(@left(%graphcomp,1)) = "Y"
 call pReport(%tlopt,!qgraphcomp)
-
+ 
 call pEnd
 
 subroutine pLoadComparison(string %p_wf, string %p_alias, _

@@ -1,10 +1,10 @@
 'PROGRAM: zlibp.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 4.6  AUGUR
+' CAM version 5.0  AUGUR
 '
 ' library functions for presentations
 '
-' updated: FC 26/10/2011
+' updated: FC 25/04/2013
 '
 '   SPGraph     make a graph tableau
 '
@@ -71,6 +71,9 @@ subroutine local SPGraph(string %p_Page, string %p_Name, _
 ' Series names are not shown in the legend if multiple content definitions
 ' are supplied or if there is only one series in the content definition.
 '
+' A data table is created for each graph unless the global variable
+' %DataTables is set to "No".
+'
 '-----------------------------------------------------
 statusline {%p_Name}
 
@@ -96,9 +99,10 @@ if %yrsh <> "" then %yrsh = %yrsh + " " + %yre endif
 smpl %yrs %yre
 
 '--- create data table and write col headings in first row
+!nTData = 0
 %tName = "t" + %p_Name
-call zCreateDataTable(%tName, %yrs, %yre)
-!nTData = 1
+call zCreateDataTable(%tName, %yrs, %yre, !nTData)
+
 '--- loop to generate subgraphs
 %tlgr = ""                     'list of subgraphs
 !n = 0                         'subgraph count
@@ -167,33 +171,38 @@ endif
 '--- merge subgraphs into composite
 call zMergeGraph(%p_Page, %p_Name, %title, %yrsh, _
   p_nCol, %p_Color, %p_Font, %tlgr, %tlLegend, !nLegend, !nSeries, _
-  %tName)
+  !nTData)
 
 endsub
 
-subroutine zCreateDataTable(string %p_TData, string %p_yrs, _
-  string %p_yre)
+subroutine zCreateDataTable(string %p_TName, string %p_yrs, _
+  string %p_yre, scalar p_nrow)
 '=====================================================================
 'Create data table to store graphed series
 '
-' Call: %p_TData   table name
+' Call: %p_TName   table name
 '       %p_yrs     start year
 '       %p_yre     end year
+'
+' Ret:  p_nrow     1 if table created
+'
 '---------------------------------------------------------------------
-table {%p_TData}
-setcell({%p_TData}, 1, 1, "Graph")
-setcell({%p_TData}, 1, 2, "Series")
+if @upper(@left(%DataTables, 1)) = "N" then return endif
+table {%p_TName}
+setcell({%p_TName}, 1, 1, "Graph")
+setcell({%p_TName}, 1, 2, "Series")
 !iys = @val(%p_yrs)
 !iye = @val(%p_yre)
 for !iy = !iys to !iye
-  setcell({%p_TData}, 1, 3+!iy-!iys, @str(!iy), "c")
+  setcell({%p_TName}, 1, 3+!iy-!iys, @str(!iy), "c")
 next  
+p_nrow = 1
 endsub
 
 subroutine local zSubGraph(string %p_Name, string %p_tlBloc, _
   string %p_tlScenario, string %p_Content, _
   string %p_yrs, string %p_yre, string %p_yrsh, _
-  string %p_Font, string %p_tName, scalar p_nrow)
+  string %p_Font, string %p_TName, scalar p_nrow)
 '=====================================================================
 'Presentation sub-graph
 '
@@ -213,7 +222,7 @@ subroutine local zSubGraph(string %p_Name, string %p_tlBloc, _
 '       %p_yre         last year to graph
 '       %p_yrsh        range for predicted values (after historical period)
 '       %p_Font        font size
-'       %p_tName       data table name
+'       %p_TName       data table name
 '       p_nrow         number of rows already entered or 0
 '                      to skip writing data series
 '
@@ -323,7 +332,7 @@ endif
 
 '--- create subgraph
 call zCreateGraph(%p_Name, %title, %scale, %p_Font, _
-  %tloption, %tlser, %p_yrs, %p_yre, %p_tName, p_nrow, _
+  %tloption, %tlser, %p_yrs, %p_yre, %p_TName, p_nrow, _
   %tldesc, %tlvar)
 
 '--- delete short series
@@ -368,7 +377,7 @@ endsub
 subroutine zCreateGraph(string %p_Name, string %p_Title, _
   string %p_Scale, string %p_Font, string %p_tlOpt, _
   string %p_tlSer, string %p_yrs, string %p_yre, _
-  string %p_tName, scalar p_nrow, string %p_tlDesc, _
+  string %p_TName, scalar p_nrow, string %p_tlDesc, _
   string %p_tlVar)
 '=====================================================================
 'Create a graph
@@ -383,7 +392,7 @@ subroutine zCreateGraph(string %p_Name, string %p_Title, _
 '       %p_tlSer    list of series
 '       %p_yrs      start year
 '       %p_yre      end year
-'       %p_tName    data table name
+'       %p_TName    data table name
 '       p_nrow      number of rows already entered or 0
 '                   to skip writing data series
 '       %p_tlDesc   series descriptors (semi-colon separators)
@@ -454,16 +463,17 @@ call CountTokens(%p_tlSer, " ", !nser)
 call zColor(%p_Name, %ctype, !nser)
 '--- zeroline
 if @instr(%p_tlOpt, "0") > 0 then {%p_Name}.scale zeroline endif
+
 '--- write series to data table
 if p_nrow > 0 then
   call zDataTable(%p_Name, %p_tlDesc, %p_tlVar, %p_yrs, %p_yre, _
-  %p_tName, p_nrow)
+    %p_TName, p_nrow)
 endif
 endsub
 
 subroutine local zDataTable(string %p_Name, string %p_tlDesc, _
-  string %p_tlSer, string %p_yrs, string %p_yre, _
-  string %p_tName, scalar p_nrow) 
+  string %p_tlSer, string %p_yrs, string %p_yre, string %p_Tname, _
+  scalar p_nrow) 
 '=====================================================================
 'Add series for a subgraph to a data table
 '
@@ -472,7 +482,7 @@ subroutine local zDataTable(string %p_Name, string %p_tlDesc, _
 '       %p_tlSer    series expressions (blank separators)
 '       %p_yrs      start year
 '       %p_yre      end year
-'       %p_tName    data table name
+'       %p_TName    data table name
 '       p_nrow      number of rows already entered
 '
 ' Ret:  p_nrow      updated number of rows
@@ -488,12 +498,12 @@ while %tl <> ""
   call Token(%tld, ";", %t)
   call EvalS(%v, %p_yrs, %p_yre, s)
   p_nrow = p_nrow + 1
-  call WriteCell(%p_tName, p_nrow, 1, %p_Name, "l")
-  call WriteCell(%p_tName, p_nrow, 2, %t, "l")
+  call WriteCell(%p_TName, p_nrow, 1, %p_Name, "l")
+  call WriteCell(%p_TName, p_nrow, 2, %t, "l")
   for !j = !iys to !iye
     !v = @elem(s, @str(!j))
     call XFormat(!v, 4, %s)
-    call WriteCell(%p_tName, p_nrow, 3+!j-!iys, %s, "r")
+    call WriteCell(%p_TName, p_nrow, 3+!j-!iys, %s, "r")
   next
 wend
 endsub
@@ -502,7 +512,7 @@ subroutine zMergeGraph(string %p_Page, string %p_Name, _
   string %p_Title, string %p_Yrsh, scalar p_nCol, _
   string %p_Color, string %p_Font, string %p_tlSub, _
   string %p_tlLegend, scalar p_nLegend, scalar p_nSeries, _
-  string %p_tName)
+  scalar p_nrow)
 '=====================================================================
 'Merge graphs into a composite display on the presentation page
 'of the workfile
@@ -519,10 +529,10 @@ subroutine zMergeGraph(string %p_Page, string %p_Name, _
 '                     or blank if legends are not displayed
 '       p_nLegend   no of legend texts
 '       p_nSeries   no of series
-'       %p_tName    name of data table
+'       p_nrow      no of rows in data table or 0 if none
 '
 '---------------------------------------------------------------------
-
+!qNTData = p_nrow > 0
 if @isobject(%p_Name) then delete {%p_Name} endif
 !lib_n = 0
 call CountTokens(%p_tlSub, " ", !lib_n)
@@ -569,11 +579,16 @@ delete {%p_tlSub}
 pageselect {%p_Page}
 if @isobject(%p_Name) then delete {%p_Name} endif
 copy data\{%p_Name}
-if @isobject(%p_tName) then delete {%p_tName} endif
-copy data\{%p_tName}
+%lib_s = "t" + %p_Name
+if @isobject(%lib_s) then delete {%lib_s} endif
+if !qNTData then
+  copy data\{%lib_s}
+endif
 pageselect data
 delete {%p_Name}
-delete {%p_tName}
+if !qNTData then
+  delete {%lib_s}
+endif
 endsub
 
 subroutine zColor(string %Name, string %Type, scalar nser)

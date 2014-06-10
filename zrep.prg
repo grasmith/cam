@@ -1,6 +1,6 @@
 'PROGRAM: zrep.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 4.6
+' CAM version 5.0
 '
 ' subroutine to create standard outputs
 '
@@ -14,10 +14,11 @@ subroutine pReport(string %p_tlOpt, scalar p_qComp)
 '
 ' Call: %p_tlOpt  list of selected options
 '                A analysis tables
-'                G world and bloc graphs
+'                G world and geo graphs
+'                S world and geo subgraphs
+'                M market graphs
 '                T report tables
 '                C csv files
-'                M market graphs
 '       p_qComp   comparison option - 1 yes, 0 no
 '
 ' Ret:
@@ -26,6 +27,7 @@ subroutine pReport(string %p_tlOpt, scalar p_qComp)
 '
 ' (i) additional options  %repstart  first year for reports
 '                         %replast   last year for reports
+'                         %repgeo    B,C,O,G,W geo selection
 '
 ' (ii)solves with the alias defined in t_Settings
 '
@@ -153,7 +155,7 @@ if @instr(%p_tlOpt, "G")>0 or _
       endif
       call MultiGraph(%g, t_WRep(!i, 2), %tt, %tlv, _
         t_WRep(!i, 4), t_WRep(!i, 6), t_WRep(!i, 7), _
-        0, %first, %last, %actual)
+        0, %first, %last, t_Settings(13,2))
     endif
     '--- tables
     if @instr(%p_tlOpt, "T")> 0 and @instr(%gtc, "T") > 0 then 
@@ -188,17 +190,22 @@ if @instr(%p_tlOpt, "G")>0 or _
         %tt = %scCompTitle + " (green,blue), " + %scTitle + " (black,red)"
       endif
       endif
-      %g = "grb_" + @replace(@replace(%tlv, "_?", "")," ","_")
-                                  'graph name
-      statusline Graph {%g}
       %t = @replace(t_BRep(!i, 2), "]", "")
       %t = @replace(%t, "[", "")
       %s = @replace(%tlv, " ", ",")
       call Rename(%s, %scAlias, %scCompare, %tlv1)
       %tlv1 = @replace(%tlv1, ",", " ")
-      call BlocGraph(%g, %t, %areas, %tlv1, %tt, _
-        t_BRep(!i, 4), t_BRep(!i, 5), _
-        0, %first, %last, %actual)
+      for !igeo = 1 to @len(%repgeo)
+        %geo = @mid(%repgeo, !igeo, 1)
+        '--- graph name
+        %g = "gr" + @lower(%geo) + "_" + _
+          @replace(@replace(%tlv, "_?", "")," ","_")
+        statusline Graph {%g}
+        call ListGeo(%geo, 1, %tlgeo)
+        call BlocGraph(%g, %t, %tlgeo, %tlv1, %tt, _
+          t_BRep(!i, 4), t_BRep(!i, 5), _
+          0, %first, %last, t_Settings(13,2))
+      next
     endif
     '--- tables
     if @instr(%p_tlOpt, "T")> 0 and @instr(%gtc, "T") > 0 then
@@ -286,12 +293,10 @@ endif
 '--- move outputs to graphs or tables page
 if @instr(%p_tlOpt, "G") > 0 then
   pageselect graphs
-  copy data\gr_*
-  copy data\grb_*
-  copy data\sgr_*
-  copy data\sgrb_*
+  copy data\gr*
+  if @instr(%p_tlOpt, "S") > 0 then copy data\sgr* endif
   pageselect data
-  delete gr_* grb_* sgr_* sgrb_*
+  delete gr* sgr*
 endif  
 if @instr(%p_tlOpt, "T") > 0 then
   pageselect tables
@@ -1003,8 +1008,8 @@ while %tlb <> ""
       call EvalS(%v , %first, %last, s)
       '--- write values in subtables
       !n1 = !nrow
-      %ngr = p_tDef(!i, 5)
-      if %ngr = "" then %ngr = "GR" endif
+      %opt = p_tDef(!i, 5)
+'      if %opt = "" then %opt = "N" endif
       for !isub = p_iDef + 1 to !nSub
         %a = p_tDef(!isub,2)            'A or P
         %g = p_tDef(!isub,3)            'formula
@@ -1026,28 +1031,32 @@ while %tlb <> ""
         for !j = !icol0 to !nyr
           !icol = !icol + 1
           %r = ""
+          !v = NA
           '--- select formula and generate cell entry
           if %g = "Value" then
             !v = @elem(s, @str(vyr(!j)))
             call SPFormat(!v, %fmt, %r)
           else if %g = "%" then
-            !v = 100*@elem(s, @str(vyr(!j))) _
-                 / @elem(s1, @str(vyr(!j)))
+            if @instr(%opt, "NRP") = 0 then
+              !v = 100*@elem(s, @str(vyr(!j))) _
+                   / @elem(s1, @str(vyr(!j)))
+            endif
             call SPFormat(!v, "f.1", %r)
           else if %g = "/" then
-            !v = @elem(s, @str(vyr(!j))) _
-                 / @elem(s1, @str(vyr(!j)))
+            if @instr(%opt, "NRP") = 0 then
+              !v = @elem(s, @str(vyr(!j))) _
+                   / @elem(s1, @str(vyr(!j)))
+            endif
             call SPFormat(!v, "ft.0", %r)
           else if %g = "Change" then
             !v = (@elem(s, @str(vyr(!j))) _
                   - @elem(s, @str(vyr(!j-1))))
             call SPFormat(!v, %fmt, %r)
           else if %g = "GR" then
-            !v = NA
-            !n = vyr(!j) - vyr(!j-1)
-            if %ngr <> "NGR" then
+            if @instr(%opt, "NGR") = 0 then
               !v1 = @elem(s, @str(vyr(!j)))
               !v0 = @elem(s, @str(vyr(!j-1)))
+              !n = vyr(!j) - vyr(!j-1)
               call GrowthRate(!v1, !v0, !n, !v)
             endif
             call SPFormat(!v, "f.1", %r)
@@ -1187,4 +1196,39 @@ if p_v0 = 0 then return endif
 !v = p_v1/p_v0
 if !v <=0 then return endif
 p_vgr = 100*(exp(log(!v)/p_ny)-1)
+endsub
+
+subroutine ListGeo(string %p_geo, scalar p_ncol, _
+  string %p_tl)
+'==============================================================
+'return a list of area codes or names
+'
+' Call: p_geo  B blocs, C countries, O other blocs
+'              G groups, W world
+'       p_ncol 1 codes, 2 names
+'
+' Ret:  p_tl   list of codes or names
+'
+'---------------------------------------------------------------
+if %p_geo = "B" then
+  !lib_is = 1
+  !lib_ie = nBloc
+else if %p_geo = "C" then
+  !lib_is = 1
+  !lib_ie = !nCountry
+else if %p_geo = "O" then
+  !lib_is = !nCountry + 1
+  !lib_ie = nBloc
+else if %p_geo = "G" then
+  !lib_is = nWorld + 1
+  !lib_ie = nArea
+else if %p_geo = "W" then
+  !lib_is = nWorld
+  !lib_ie = !lib_is
+endif
+endif
+endif
+endif
+endif  
+call ListCol(t_Bloc, !lib_is, !lib_ie, p_ncol, " ", %p_tl)
 endsub

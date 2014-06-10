@@ -1,16 +1,17 @@
 'PROGRAM: zdef.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 4.6
+' CAM version 5.0
 '
-' program segment to build inner and outer sub-models
+' program segment to build the core model
 '
-' this segment loads estimated equations into sub-models and supplies
-' the sub-model identities
+' this segment loads estimated equations into inner and outer
+' sub-models, supplies the sub-model identities and combines
+' them into the core model m_wm
 '
-' updated: FC 26/05/2012
+' updated: FC 15/04/2013
 '
-' NB: unaligned behavioural variables assigned to the outer model are
-' listed at the top of the routine below. Identities are assigned
+' NB: aligned behavioural variables assigned to the inner sub-model
+' are listed at the top of the routine below. Identities are assigned
 ' explicitly
 '
 '=====================================================================
@@ -19,7 +20,7 @@ subroutine pDefineModel
 '--- clean up
 delete *_tar
 delete *_sav
-delete m_*
+delete m_wm*
 
 call ListCol(t_Bloc, 1, nBloc, 1, " ", %blocs)
 
@@ -31,13 +32,14 @@ model m_wmo                    'outer model (unaligned variables)
 '    assign equations for these variables to the inner model
 %tlva = ";YG;G;SP;IP;IV;is;im;rxu;pvi;"
 for !j = 1 to nEq
-  %var = t_Eq(!j,  2)
+  %var = t_Eq(!j,2)
   if %var <> "sxm" then
     %a = "o"
     if @instr(%tlva, ";"+%var+";") > 0 then %a = "i" endif
     m_wm{%a}.append :p_{%var}
   endif
 next
+
 '--- world price of primary commodities (inner model)
 m_wmi.append :eq_pa_w
 
@@ -65,39 +67,80 @@ for !j = 1 to nBloc
 '--- sum predicted market shares for the partner
   series sxmu_{%p}=1
   m_wmo.append @identity sxmu_{%p} = {%l}
+
 next
 
 '============ 1: population, migration and employment
-'             (outer model)
+'             (mixed model)
+
+'--- total employment and unemployment (for alignment)
+'call AppendIdent( _
+'  "B;i;" _
+'  + "NU_?=NUYF_?+NUYM_?+NUVF_?+NUVM_? " _
+'  + "NE_?=NEF_?+NEM_? " _
+')
 
 '--- adjust migration to sum to zero for world as a whole
+
 '    the adjustment ratio to make the sum of negative values
 '    equal to positive ones is r = 2*NIMU_W/(NIMUA_W-NIMU_W))
 '    and the adjusted values are NIM = NIMU + r*(NIMU-abs(NIMU))/2
 series NIMU_W = NIM_W
+
 '--- sum of absolute values
 call BlocList("abs(NIMU_?)", "+", %blocs, %s)
 series NIMUA_W = {%s}
-
-'--- note: employment calculated from transformed activity rates
 
 call AppendIdent( _
   "W;o;" _
   + "N_? NIMU_? " _
   + "NIMUA_?=" + %s + " " _
 + ":B;o;" _
-  + "NIM_?=NIMU_?+NIMU_W*(NIMU_?-@abs(NIMU_?))/(NIMUA_W-NIMU_W) " _
-  + "NF_?=NF_?(-1)+DNNF_?+0.5*NIM_? " _
-  + "N_?=N_?(-1)+DNN_?+NIM_? " _
-  + "NM_?=N_?-NF_? " _
-  + "NWPF_?=NF_?-NOPF_?-NCPF_? " _
-  + "NWPM_?=NM_?-NOPM_?-NCPM_? " _
-  + "NWP_?=NWPF_?+NWPM_? " _
-  + "NEF_?=(NWPF_?(-1)+NOPF_?(-1))" _
-    + "*((cafmax-cafmin)/(1/exp(NEAF_?)+1)+cafmin) " _
-  + "NEM_?=(NWPM_?(-1)+NOPM_?(-1))" _
-    + "*((cammax-cammin)/(1/exp(NEAM_?)+1)+cammin) " _
+  + "NIM_?=NIMU_?+NIMU_W*(NIMU_?-@abs(NIMU_?))" _
+    + "/(NIMUA_W-NIMU_W) " _
+  + "NVF_?=NVF_?(-1)+DNNVF_?+NIM_?/4 " _
+  + "NVM_?=NVM_?(-1)+DNNVM_?+NIM_?/4 " _
+  + "NYF_?=NYF_?(-1)+DNNYF_?+NIM_?/4 " _
+  + "NYM_?=NYM_?(-1)+DNNYM_?+NIM_?/4 " _
+  + "NOP_?=NOF_?+NOM_? " _
+  + "NPF_?=NYF_?+NVF_? " _
+  + "NPM_?=NYM_?+NVM_? " _
+  + "NP_?=NPF_?+NPM_? " _
+  + "N_?=NCP_?+NP_? " _
+  + "NWP_?=N_?-NCP_?-NOP_? " _
+  + "NLYF_?=NLNYF_?*NYF_?/100 " _
+  + "NLYM_?=NLNYM_?*NYM_?/100 " _
+  + "NLVF_?=NLNVF_?*NVF_?/100 " _
+  + "NLVM_?=NLNVM_?*NVM_?/100 " _
+  + "NLF_?=NLYF_?+NLVF_? " _
+  + "NLM_?=NLYM_?+NLVM_? " _
+  + "NUYF_?=NULYF_?*NLYF_?/100 " _
+  + "NUYM_?=NULYM_?*NLYM_?/100 " _
+  + "NUVF_?=NULVF_?*NLVF_?/100 " _
+  + "NUVM_?=NULVM_?*NLVM_?/100 " _
+  + "NUF_?=NUYF_?+NUVF_? " _
+  + "NUM_?=NUYM_?+NUVM_? " _
+  + "NEVF_?=NLVF_?-NUVF_? " _
+  + "NEVM_?=NLVM_?-NUVM_? " _
+  + "NEYF_?=NLYF_?-NUYF_? " _
+  + "NEYM_?=NLYM_?-NUYM_? " _
+  + "NEF_?=NEYF_?+NEVF_? " _
+  + "NEM_?=NEYM_?+NEVM_? " _
+  + "NEAF_?=NEAEF_?*NEF_?/100 " _
+  + "NEAM_?=NEAEM_?*NEM_?/100 " _
+  + "NENF_?=NEF_?-NEAF_? " _
+  + "NENM_?=NEM_?-NEAM_? " _
+  + "NEIF_?=NEINF_?*NENF_?/100 " _
+  + "NEIM_?=NEINM_?*NENM_?/100 " _
+  + "NESF_?=NENF_?-NEIF_? " _
+  + "NESM_?=NENM_?-NEIM_? " _
+  + "NL_?=NLF_?+NLM_? " _
+  + "NU_?=NUF_?+NUM_? " _
   + "NE_?=NEF_?+NEM_? " _
+  + "NEA_?=NEAF_?+NEAM_? " _
+  + "NEN_?=NENF_?+NENM_? " _
+  + "NEI_?=NEIF_?+NEIM_? " _
+  + "NES_?=NESF_?+NESM_? " _
 )
 
 '==== 2: price base, domestic expenditure, c/a and trade balance
@@ -108,10 +151,9 @@ call AppendIdent( _
 '--- adjustment for real exchange rates
 ' the weighted average adjusted real exchange rate
 '    sum(rxu*H)/(rxadj*H_W)
-' should be constant, equal to the base year pp
-' converter for world expenditure pp0_w
+' should be equal to 1
 ' implying the following identity
-'    rxadj = sum(rxu*H)/(H_W*pp0w)
+'    rxadj = sum(rxu*H)/H_W
 
 copy XIT$_* XIT$U_*
 series XIT$U_W = XIT$_W
@@ -125,7 +167,7 @@ call AppendIdent( _
   + "ph_?=ph_?(-1)*(1+pi_us/100)*rx_us(-1)/rx_us " _
   + "pp0_?=pp0_?(-1) " _
   + "rx_?(H_?) " _
-  + "rxadj=(" + %s + ")/(H_?*pp0_?) " _
+  + "rxadj=(" + %s + ")/H_? " _
 + ":B;i;" _
   + "H_?=C_?+IP_?+IV_?+G_? " _
   + "pp0_?=pp0_?(-1) " _
@@ -165,6 +207,10 @@ call AppendIdent( _
   + "VV$_?=H_?*rx_?+TB$_? " _
   + "VV_?=H_?+TB$_?/rx_? " _
   + "YN$_?=Y$_?/N_? " _
+  + "VVS_?=VV_?-VVA_?-VVE_?-VVI_? " _
+  + "VVTX_?=rtx_?*VV_?/(100+rtx_?) " _
+  + "VVPR_?=mu_?*(VV_?-VVTX_?)/(100+mu_?) " _
+  + "VVEM_?=VV_?-VVPR_?-VVTX_? " _
   + "VT_?=1.05*@movav(V_?,6)*exp(0.3*(log(V_?/V_?(-6)))) " _
 + ":BW;i;" _
   + "YN_?=Y_?/N_? " _
@@ -180,9 +226,12 @@ call AppendIdent( _
   + "pi$_?=100*(ph_?/ph_?(-1)-1) " _
   + "irs_?(H_?) irm_?(H_?) " _
 + ":B;i;" _
-  + "pi_?=100*((1+pvi_?/100)*tt_?(-1)/tt_?-1) " _
+  + "pvi_?=100*((1+ei_?/100)*((1+mu_?/100)/(1+mu_?(-1)/100))" _
+    + "*((1+rtx_?/100)/(1+rtx_?(-1)/100))*(V_?(-1)*NE_?" _
+    + "/(V_?*NE_?(-1)))-1) " _
   + "spvi_?=log(-0.718+3.436*(1+pvi_?/100)/(2+pvi_?/100)) " _
   + "rpfa_?=1/(1+spvi_?) " _
+  + "pi_?=100*((1+pvi_?/100)*tt_?(-1)/tt_?-1) " _
   + "pi$_?=100*(ph_?/ph_?(-1)-1) " _
   + "pvd_?=pvd_?(-1)*(1+pvi_?/100) " _
   + "phd_?=phd_?(-1)*(1+pi_?/100) " _
@@ -200,6 +249,7 @@ call AppendIdent( _
 
 call AppendIdent( _
   "B;i;" _
+  + "YG_?=YGD_?+VVTX_? " _
   + "NLG_?=YG_?-G_? " _
 + ":B;o;" _
   + "slgx_?=1-log(1+YR_?)/2 " _
@@ -217,7 +267,9 @@ call AppendIdent( _
 '============ 6: private expenditure and income
 
 call AppendIdent( _
-  "B;i;" _
+  "W;o;" _
+  + "IP_? IV_? " _
++ ":B;i;" _
   + "C_?=YP_?-SP_? " _
   + "IPT_?=IP_?+IV_? " _
   + "YP_?=Y_?-YG_? " _
@@ -390,5 +442,10 @@ for !i = 1 to nModelX
   %t = %t + t_ModelX(!i, 1) + ";o;" + t_ModelX(!i, 2) + ":"
 next
 call AppendIdent(%t)
+
+'--- combine the models
+model m_wm
+m_wm.merge m_wmi
+m_wm.merge m_wmo
 
 endsub

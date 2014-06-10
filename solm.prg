@@ -1,6 +1,6 @@
-'PROGRAM: solm.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: solm.prg          Copyright (C) 2012, 2013 Alphametrics Co. Ltd.
 '
-' CAM version 4.6                            
+' CAM version 5.0                           
 '
 ' multiplier analysis summary reports
 '
@@ -17,40 +17,37 @@
 ' results are stored on the table page of SOLM.wf1. Each table
 ' is named after the shocked var and bloc
 '
-' WARNING: execution time is around 10 minutes per shocked bloc.
+' WARNING: execution time may be 1 minute or more per shocked bloc.
 '
-' updated: FC 01/10/2010
+' updated: FC 30/07/2013
 '
 '==================================================================
 ' OPTIONS
+include "set"
+call solm
+'------------------------------------------------------------------
+subroutine solm
 '
 ' see DEFINITIONS below for lists of variables to be shocked and
 ' results to be reported
 
-%shockblocs = "US CN EUW AM"
+%shockblocs = "US CN DE AM"
 
 '==================================================================
 ' PREFACE
 '==================================================================
 mode quiet
-'--- constants and library
-include "set.prg"
-'--- open the baseline and clean up
-open SOL0
-pageselect graphs
-delete *
-pageselect tables
-delete *
-pageselect data
-delete sp_log* *_0p
+%wkfile = "SOLM"
+call CreateModelFile("SOL0", %wkfile) 
+delete m_wm0
+
 '--- update settings
-call pLog("SOLM PROGRAM v0110")
+call pLog("SOLM PROGRAM v3007")
 %wkfile = "SOLM"
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)
 t_Settings(3,2) = "M"
 t_Settings(4,2) = "multipliers"
-t_Settings(7,2) = %wkfile
 call pCreateScenario(%gm, %alias)
 
 '==================================================================
@@ -60,37 +57,47 @@ call pCreateScenario(%gm, %alias)
 '--- shock size relative to historical equation residuals
 '    (percentage point on normal distribution)
 %probability = "95"
-
+  
 %shockvars = "G:govt exp on goods & services;" _
-  + "YG:govt revenue (net of grants & subs);" _
-  + "is:short-term interest rate;" _
-  + "rxu:real exchange rate;" _
-  + "MM$:imports of manufactures;" _
-  + "ED:energy use;" _
-  + "NIMU:net migration;" _   
-  + "pvi:inflation;" _
-  + "pkp:real asset prices;" _
-  + "im:bond rates;" _
-  + "wln(NFI):abnormal loan write-offs;" _
-  + "IP:private investment"
+  + "YGD:direct government revenue net;" _
+  + "IP:private investment;" _
+  + "rxu:exchange rate;" _
+  + "ei:wage inflation;" _
+  + "mu:profit markup;" _
+  + "NLNVM:male adult labour force participation;" _
+  + "NULVM:male adult unemployment;" _
+  + "ED:energy demand"
 
 'NB: if abnormal loan write-offs, wln ,are included in the list of
 'variables to be shocked, the reference (NFI) must be provided to
 'specify the source for size of shocks.
 
-%ownimpact = "C:consumption;G:government spending;IP:investment;" _
-  + "IV:inventories;V:GDP;YG:govt net revenue;LG:government debt;" _
+%ownimpact = "G:govt exp on goods & services;" _
+  + "YGD:direct government revenue net;" _
+  + "IP:private investment;" _
+  + "rx:real exchange rate;" _
+  + "ei:wage inflation;" _
+  + "mu:profit markup;" _
+  + "NLNVM:male adult labour force participation;" _
+  + "NULVM:male adult unemployment;" _
+  + "ED:energy demand;" _
+  + "C:consumption;" _
+  + "V:GDP;" _
+  + "NLG:government net lending;" _
+  + "LG:government debt;" _
   + "CA$:current account;" _
-  + "pvi:cost inflation;pi:price inflation;pkp:real asset prices;" _
-  + "rx:real exchange rate;rxna:nominal change in $ rate;" _
-  + "is:interest rates;im:bond rates;irs:real interest rates;" _
-  + "NER:employment rate;NIM:net migration;NE:employment;" _
-  + "irm:real bond rates;"
-
-%otherimpact = "V:GDP;CA$:current account;pi:inflation"
-%blocimpact = "EUN EUW EUE EUS UK US JA CN WA AFS"
-%worldimpact = "VV_W:GDP;X$_W:exports;pe_w:oil price;NE_W:employment;" _
-  + "pi$_w:dollar inflation;pi_w:domestic inflation"
+  + "rxd:US$ exchange rate;" _
+  + "pi:price inflation;" _
+  + "VVEME:average real earnings;" _
+  + "VVPRV:profit share;" _
+  + "NIM:net migration;" _
+  + "NE:total employment;" _
+  + "NUL:unemployment rate;" _
+  + "CO2:CO2 emissions"
+%otherimpact = "V:GDP;NE:employment;CA$:current account"
+%blocimpact = "US DE FR IT JA CN WA IN"
+%worldimpact = "V_W:GDP;X$_W:exports;" _
+  + "pe_w:oil price"
 
 '==================================================================
 ' PROCESSING
@@ -114,8 +121,8 @@ call CopyAliasValues("_0", "", %first, %first)
 smpl %start %end
 
 '--- shocks for one bloc at a time
-call Token(%shockblocs, " ", %shockb)
-while %shockb <> ""
+while %shockblocs <> ""
+  call Token(%shockblocs, " ", %shockb)
   '--- impact list
   %tlImpact = ""
   %tl = %ownimpact
@@ -145,8 +152,8 @@ while %shockb <> ""
   wend
   '--- shock one variable at a time
   %tlshockv = %shockvars
-  call Token(%tlshockv, ";", %shockvn)
-  while %shockvn <> ""
+  while %tlshockv <> ""
+    call Token(%tlshockv, ";", %shockvn)
     call Token(%shockvn, ":", %shockv)
     call Token(%shockv, "(", %v)
     if %shockv <> "" then
@@ -175,7 +182,7 @@ while %shockb <> ""
       call Add2Series(%shockins, @str(!vshock), %first, %first)
   '--- solve the model   
       call pLog("solving for " + %first + "-" + %predict)
-      call SolveModel({%gm}, "o=g,g=n,m=10000",%actual, %predict)
+      call SolveModel({%gm}, "o=b,g=n,i=p,m=10000,c=1e-8,v=t",%actual, %predict)
       %s = %shockvar
       if %shockref <> %shockvar then
         %s = %s + "(" + %shockref + ")"
@@ -187,12 +194,11 @@ while %shockb <> ""
   '--- remove the shock
       call Add2Series(%shockins, @str(-!vshock), %first, %first)
     endif
-    call Token(%tlshockv, ";", %shockvn)
   wend
-  call Token(%shockblocs, " ", %shockb)
 wend
 smpl %start %end
 call pEnd
+endsub
 
 subroutine local zAddImpact(string %tl, string %vn, string %bref)
 '==============================================================

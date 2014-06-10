@@ -1,12 +1,12 @@
-'PROGRAM: present.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: present.prg          Copyright (C) 2012, 2013 Alphametrics Co. Ltd.
 '
-' CAM version 4.6  AUGUR
+' CAM version 5.0
 '
 ' presentation graphs - examples
 '
-' updated: NK 11/10/2011
+' updated: FC 30/07/2013
 '
-' requires SOL4
+' requires SOLN2
 ' uses library routines in zlibp
 '
 '---------------------------------------------------------------
@@ -30,12 +30,12 @@ show sp_log
 pagecreate(page=present) a %start %end
 
 '--- generate the graphs on the new page
-'    historical data for 1990-2011, predictions 2012-2030
+'    historical data for 1990-2012, predictions 2013-2030
 '    comparisons of scenarios 1 and 4
 '    graph panels have yellow background
 
-call pGraph("present", "1990 2030 2012", _
-  "1;consolidation:4;global recovery", %blyellow)
+call pGraph("present", "1990 2030 2013", _
+  "N1;struggling on:N2;European reflation", %blyellow)
 
 stop
 
@@ -63,7 +63,7 @@ if @left(@upper(%p_color),1) = "B" then %color = "" endif
 call SPGraph(%page, "G01_1WYN", _
   "income per capita ($2005 pp)", _
   %color, %font,"single W AM EU EA OA AF", _
-  "1;consolidation",%p_tlyear,3, _
+  "N1;struggling on",%p_tlyear,3, _
   ";0;;YN_?:" _
   )
 
@@ -89,8 +89,8 @@ call SPGraph(%page, "G02_WYN", _
 '    bloc areas are stacked on top of each other
 call SPGraph(%page, "G03_1EUC", _
   "consumer spending ($2005 pp billion)", _
-  %color, %font,"single EUW EUS UK EUE EUN", _
-  "1;consolidation",%p_tlyear,3, _
+  %color, %font,"single DE UK FR IT ES PL EUW EUN EUE EUS", _
+  "N1;struggling on",%p_tlyear,3, _
   ";0;area;C_?/1000:" _
   )
 
@@ -101,7 +101,7 @@ call SPGraph(%page, "G03_1EUC", _
 call SPGraph(%page, "G04_1WEDCO2", _
   "world energy use and CO2 emissions (b tons p.a.)", _
   %color, %font,"", _
-  "1;consolidation",%p_tlyear,3, _
+  "N1;struggling on",%p_tlyear,3, _
   ";;scat;ED_W/1000 energy use" _
     + "|CO2_W/1000 CO2 emissions:" _
   )
@@ -112,8 +112,8 @@ call SPGraph(%page, "G04_1WEDCO2", _
 '    the separator |
 call SPGraph(%page, "G05_1EUEDEPN", _
   "energy use and non-carbon supply (kg per $ GDP)", _
-  %color, %font,"EUW EUS UK EUE EUN", _
-  "1;consolidation",%p_tlyear,3, _
+  %color, %font,"DE UK FR IT ES PL EUW EUN EUE EUS", _
+  "N1;struggling on",%p_tlyear,3, _
   ";0,0.4;;1000*ED_?/V_? energy use" _
     + "|1000*EPN_?/V_? non-carbon supply:" _
   )
@@ -125,10 +125,10 @@ call SPGraph(%page, "G05_1EUEDEPN", _
 '    program
 call SPGraph(%page, "G06_EUEDEPN", _
   "energy use and non-carbon supply (kg per $ GDP)", _
-  %color, %font,"EUW EUS UK EUE EUN", _
+  %color, %font,"DE UK FR IT ES PL EUW EUN EUE EUS", _
   %p_tlScenario,%p_tlyear,3, _
   ";0,0.4;;1000*ED_?/V_? energy use" _
-    + "|1000*EPN_?/V_? CO2 non-carbon supply:" _
+    + "|1000*EPN_?/V_? non-carbon supply:" _
   )
   
 '--- tableau for one area

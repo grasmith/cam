@@ -41,32 +41,23 @@
 
 %shockvar = "G_US"
 %impacton = "YP_US C_US IP_US IV_US V_US Y_US" _
-  + " X$_US M$_US TB$_US CA$_US rx_US NE_US NIM_US pkp_US" _
-  + " pvi_US pi_US is_US im_US irs_US irm_US"
+  + " X$_US M$_US TB$_US CA$_US rx_US NE_US NIM_US" _
+  + " ei_US pi_US is_US im_US"
 %graphs = "Yes"
 
 '==================================================================
 ' PREFACE
 '==================================================================
 mode quiet
-'--- constants and library
-include "set.prg"
-'--- open the baseline and clean up
-open SOL0
-pageselect tables
-delete *
-pageselect graphs
-delete *
-pageselect data
-delete sp_log* t_Rule* nRule* *_0p
+%wkfile = "SHOCK"
+call CreateModelFile("SOL0", %wkfile) 
+delete m_wm0
 '--- update settings
-call pLog("SHOCK PROGRAM v0110")
-%wkfile = "SOLS"
+call pLog("SHOCK PROGRAM v2803")
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)
 t_Settings(3,2) = "S"
 t_Settings(4,2) = "shock analysis"
-t_Settings(7,2) = %wkfile
 call pCreateScenario(%gm, %alias)
 
 '==================================================================
@@ -129,7 +120,7 @@ else
   call Add2Series(%shockins, @str(!vshock), %first, %first)
 '--- solve the model   
   call pLog("solving for " + %first + "-" + %predict)
-  call SolveModel({%gm}, "o=g,g=n,m=10000",%actual, %predict)
+  call SolveModel({%gm}, "o=g,g=n,i=p,m=10000",%actual, %predict)
   %s = %shockvar
   if %shockref <> %shockvar then
     %s = %s + "(" + %shockref + ")"

@@ -1,6 +1,6 @@
 'PROGRAM: est.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 4.6
+' CAM version 5.0
 '
 ' estimation of behavioural equations
 '
@@ -12,7 +12,7 @@
 ' you can get different types of estimation output by switching
 ' on the various options listed below
 '
-' updated: FC 25/06/2012
+' updated: FC 11/04/2013
 '
 '==================================================================
 ' OPTIONS
@@ -23,10 +23,10 @@ call est
 subroutine est
 
 %equation_listing = "Yes"
-%comparisons = "Yes"
+%comparisons = "No"
 %prediction_graphs = "Yes"
 %startest = "1980"            ' first year for eqn estimation
-%endest = "2010"              ' last year for eqn estimation
+%endest = "2011"              ' last year for eqn estimation
 
 '--- "recent" intercept fitting for equations with option R
 %startfit = "1996"            ' first year for "recent" intercept fit
@@ -46,7 +46,7 @@ pageselect data
 delete gp_gr* sp_log*
 
 '--- update settings
-call pLog("EST PROGRAM v0625")
+call pLog("EST PROGRAM v1104")
 %wkfile = "EST"
 t_Settings(7,2) = %wkfile
 wfsave {%wkfile}
@@ -66,41 +66,14 @@ call ListCol(t_Bloc, 1, nBloc, 1, " ", %blocs)
 table t_Eq
 scalar nEq = 0
 
-'========= EMPLOYMENT, MIGRATION and URBANISATION
+'========= MIGRATION, URBANISATION AND EMPLOYMENT
 
-'--- employment is bounded above (85%) and below (40%) relative to 
-'    population of working age plus 20% of old people;
-'    the elasticity of employment at the mid-point of the range is
-'    six times the elasticity of the bounded ratio;
-'    GDP growth terms are multiplied by relative income
-'    making employment sensitive to GDP at the top end of the scale
-'    and insensitive at the bottom end;
-'    urbanisation is expected to have a negative effect on participation
-
-'--- female and male activity rates using weighted population
-'    with a transform to set bounds
-scalar cafmax = 0.70
-scalar cafmin = 0.15
-p_Bloc.genr NEAF_? = log(1/((cafmax-cafmin) _
-  /(NEF_?/(NWPF_?(-1)+NOPF_?(-1))-cafmin)-1))
-scalar cammax = 0.95
-scalar cammin = 0.45
-p_Bloc.genr NEAM_? = log(1/((cammax-cammin) _
-  /(NEM_?/(NWPM_?(-1)+NOPM_?(-1))-cammin)-1))
-
-call AddEquation(%blocs, "NEAF female activity;;" _
-  + "d(NEAF_?) = " _
-  + "error correction:c*NEAF_?(-1);" _
-  + "children:c*log(NCP_?(-1)/N_?(-1));" _
-  + "GDP growth:c*YR_?(-1)*dlog(V_?);" _
-  + "lagged GDP growth:c*YR_?(-1)*dlog(V_?(-1))")
-
-call AddEquation(%blocs, "NEAM male activity;;" _
-  + "d(NEAM_?) = " _
-  + "error correction:c*NEAM_?(-1);" _
-  + "urbanisation:c*log(NUR_?(-1)/N_?(-1));" _
-  + "GDP growth:c*YR_?(-1)*dlog(V_?);" _
-  + "lagged GDP growth:c*YR_?(-1)*dlog(V_?(-1))")
+call Bound(%tlBound, _
+  "N NE NEAF NEAM NEF NEM NEIF NEIM " _
+  + "NLF NLM NLVF NLVM NLYF NLYM " _
+  + "NULVF NULVM NULYF:-0.01 NULYM:-0.01 NUR " _
+  + "NVF NVM NYF NYM " _
+  + "V VV VVA VVEM VVI VVS")
 
 copy NIM_* NIMU_*  
 call AddEquation(%blocs, "NIMU net migration;(12);" _
@@ -113,37 +86,218 @@ call AddEquation(%blocs, "NIMU net migration;(12);" _
 call AddEquation(%blocs, "NUR urban population;-;" _
   + "dlog(1/(1/(NUR_?/N_?)-1)) = " _
   + "GDP per capita:c*log(V_?(-1)/N_?(-1))")
+
+call AddEquation(%blocs, _
+  "NLNVF adult female labour force participation;-;" _
+  + "dlog(NLNVF_?) = " _
+  + "error correction:c*log(NLNVF_?(-1));" _
+  + "ageing:c*NOF_?/NVF_?;" _
+  + "urbanisation:c*NUR_?/N_?;" _
+  + "relative income:c*log(1+YR_?)")
+
+call AddEquation(%blocs, _
+  "NLNVM adult male labour force participation;-;" _
+  + "dlog(NLNVM_?) = " _
+  + "error correction:c*log(NLNVM_?(-1));" _
+  + "ageing:c*NOM_?/NVM_?;" _
+  + "urbanisation:c*NUR_?/N_?;" _
+  + "relative income:c*log(1+YR_?)")
+
+call AddEquation(%blocs, _
+  "NLNYF young female labour force participation;-;" _
+  + "dlog(NLNYF_?) = " _
+  + "error correction:c*log(NLNYF_?(-1));" _
+  + "no of children:c*NCP_?/N_?;" _
+  + "urbanisation:c*NUR_?/N_?;" _
+  + "relative income:c*log(1+YR_?)")
+
+call AddEquation(%blocs, _
+  "NLNYM young male labour force participation;-;" _
+  + "dlog(NLNYM_?) = " _
+  + "error correction:c*log(NLNYM_?(-1));" _
+  + "no of children:c*NCP_?/N_?;" _
+  + "urbanisation:c*NUR_?/N_?;" _
+  + "relative income:c*log(1+YR_?)")
+ 
+call AddEquation(%blocs, "NULVF female unemployment rate 25+;-;" _
+  + "-dlog(35/(0.1+NULVF_?)-1) = " _
+  + "error correction:c*-log(35/(0.1+NULVF_?(-1))-1);" _
+  + "labour force growth:c*dlog(NVF_?(-1));" _
+  + "GDP growth:c*log(1+YR_?(-1))*dlog(V_?);" _
+  + "lagged GDP growth:c*log(1+YR_?(-1))*dlog(V_?(-1));" _
+  + "fixed investment growth:c*log(1+YR_?(-1))*dlog(IP_?);" _
+  + "global inventories:c*IV_W/V_W;" _
+  + "urbanisation:c*NUR_?/N_?")  
+ 
+call AddEquation(%blocs, "NULVM male unemployment rate 25+;-;" _
+  + "-dlog(25/(0.1+NULVM_?)-1) = " _
+  + "error correction:c*-log(25/(0.1+NULVM_?(-1))-1);" _
+  + "labour force growth:c*dlog(NVM_?(-1));" _
+  + "GDP growth:c*log(1+YR_?(-1))*dlog(V_?);" _
+  + "lagged GDP growth:c*log(1+YR_?(-1))*dlog(V_?(-1));" _
+  + "fixed investment growth:c*log(1+YR_?(-1))*dlog(IP_?);" _
+  + "global inventories:c*IV_W/V_W;" _
+  + "urbanisation:c*NUR_?/N_?")  
+ 
+call AddEquation(%blocs, "NULYF female unemployment rate 15-24;-;" _
+  + "-dlog(65/(0.1+NULYF_?)-1) = " _
+  + "error correction:c*-log(65/(0.1+NULYF_?(-1))-1);" _
+  + "GDP growth:c*log(1+YR_?(-1))*dlog(V_?);" _
+  + "lagged GDP growth:c*log(1+YR_?(-1))*dlog(V_?(-1));" _
+  + "fixed investment growth:c*log(1+YR_?(-1))*dlog(IP_?);" _
+  + "global inventories:c*IV_W/V_W;" _
+  + "urbanisation:c*NUR_?/N_?")  
+
+  '---rejected
+'  + "labour force growth:c*dlog(NYF_?);" _
+ 
+call AddEquation(%blocs, "NULYM male unemployment rate 15-24;-;" _
+  + "-dlog(55/(0.1+NULYM_?)-1) = " _
+  + "error correction:c*-log(55/(0.1+NULYM_?(-1))-1);" _
+  + "GDP growth:c*log(1+YR_?(-1))*dlog(V_?);" _
+  + "lagged GDP growth:c*log(1+YR_?(-1))*dlog(V_?(-1));" _
+  + "fixed investment growth:c*log(1+YR_?(-1))*dlog(IP_?);" _
+  + "global inventories:c*IV_W/V_W;" _
+  + "urbanisation:c*NUR_?/N_?")  
+
+'---rejected
+'  + "labour force growth:c*dlog(NYM_?);" _
+
+call AddEquation(%blocs, _
+  "NEAEF share of female employment in agriculture;-;" _
+  + "dlog(NEAEF_?) = " _
+  + "error correction:c*log(NEAEF_?(-1));" _
+  + "urbanisation:c*NUR_?/N_?;" _
+  + "relative income:c*log(1+YR_?)")
+
+call AddEquation(%blocs, _
+  "NEAEM share of male employment in agriculture;-;" _
+  + "dlog(NEAEM_?) = " _
+  + "error correction:c*log(NEAEM_?(-1));" _
+  + "urbanisation:c*NUR_?/N_?;" _
+  + "relative income:c*log(1+YR_?)")
+
+call AddEquation(%blocs, _
+  "NEINF share of female employment in industry;-;" _
+  + "dlog(NEINF_?) = " _
+  + "error correction:c*log(NEINF_?(-1));" _
+  + "industry share of GDP:c*log(VVI_?(-1)/VV_?(-1));" _
+  + "change in industry share of GDP:c*dlog(VVI_?/VV_?)")
   
+call AddEquation(%blocs, _
+  "NEINM share of male employment in industry;-;" _
+  + "dlog(NEINM_?) = " _
+  + "error correction:c*log(NEINM_?(-1));" _
+  + "industry share of GDP:c*log(VVI_?(-1)/VV_?(-1));" _
+  + "change in industry share of GDP:c*dlog(VVI_?/VV_?)")
+
+'========= GDP BY BROAD SECTOR
+call Bound(%tlBound, "VV VVA VVE VVI YN")
+call AddEquation(%blocs, "VVA GDP in agriculture;-;" _
+  + "dlog(VVA_?/VV_?) = " _
+  + "error correction:c*log(VVA_?(-1)/VV_?(-1));" _
+  + "change in domestic expenditure:c*dlog(H_?);" _
+  + "per capita income:c*log(YN_?(-1));" _
+  + "change in net exports of raw materials:" _
+    + "c*d(BA$_?/(rx_?*VV_?))")
+
+'--- rejected
+'  + "urbanisation:c*NUR_?/N_?")
+
+call AddEquation(%blocs, "VVE GDP in extraction;-;" _
+  + "dlog(VVE_?/VV_?) = " _
+  + "error correction:c*log(VVE_?(-1)/VV_?(-1));" _
+  + "change in domestic expenditure:c*dlog(H_?);" _
+  + "consumers expenditure:c*C_?/VV_?;" _
+  + "change in net exports of energy:c*d(BE$_?/(rx_?*VV_?))")
+ 
+call AddEquation(%blocs, "VVI GDP in industry;-;" _
+  + "dlog(VVI_?/VV_?) = " _
+  + "error correction:c*log(VVI_?(-1)/VV_?(-1));" _
+  + "change in domestic expenditure:c*dlog(H_?);" _
+  + "lagged change in domestic expenditure:c*dlog(H_?(-1));" _
+  + "private investment expenditure:c*IP_?/VV_?;" _
+  + "per capita income:c*log(YN_?(-1));" _
+  + "change in net exports of manufactures:" _
+   + "c*d(BM$_?/(rx_?*VV_?))")
+
+'--- rejected
+'  + "urbanisation:c*NUR_?/N_?")
+
+'========= GDP BY INCOME CATEGORY
+call Bound(%tlBound, "VV VVEM")
+
+''--- unconstrained equation
+'copy mu_* mu1_*
+'call AddEquation(%blocs, "mu1 Profit and rent markup;-;" _
+'  + "dlog(1+mu1_?/100) = " _
+'  + "error correction:c*log(1+mu1_?(-1)/100);" _
+'  + "productivity growth:c*dlog(V_?/NE_?);" _
+'  + "inflation of earnings:c*log(1+ei_?/100);" _
+'  + "movement of terms of trade:c*dlog(tt_?);" _
+'  + "energy exports:" _
+'    + "c*XE$_?(-1)/(rx_?(-1)*VV_?(-1));" _
+'  + "change in energy exports:" _
+'    + "c*d(XE$_?/(rx_?*VV_?))")
+
+call AddEquation(%blocs, "mu Profit and rent markup;-;" _
+  + "dlog(1+mu_?/100) = " _
+  + "error correction:c*log(1+mu_?(-1)/100);" _
+  + "productivity growth:0.8*dlog(V_?/NE_?);" _
+  + "inflation of earnings:c*log(1+ei_?/100);" _
+  + "movement of terms of trade:c*dlog(tt_?);" _
+  + "energy exports:" _
+    + "c*XE$_?(-1)/(rx_?(-1)*VV_?(-1));" _
+  + "change in energy exports:" _
+    + "c*d(XE$_?/(rx_?*VV_?))")
+
+'--- rejected
+'  + "inflation:c*(1+pi_?(-1)/100);" _
+'  + "real exchange rate:c*log(rx_?(-1));" _
+'  + "change in real exchange rate:c*dlog(rx_?)")
+
 '========= FISCAL POLICY
+call Bound(%tlBound, "G LG NGI R$ rx VVTX")
+
+call AddEquation(%blocs, "rtx Indirect taxes less subsidies;-;" _
+  + "dlog(1+rtx_?/100) = " _
+  + "error correction:c*log(1+rtx_?(-1)/100);" _
+  + "energy exports:" _
+    + "c*XE$_?(-1)/(rx_?(-1)*VV_?(-1));" _
+  + "change in energy exports:" _
+    + "c*d(XE$_?/(rx_?*VV_?))")
+
+'--- rejected
+'  + "GDP growth:c*dlog(VV_?);" _
+'  + "relative income:c*log(1+YR_?(-1));" _
+'  + "government financial balance:c*NLG_?(-1)/VV_?(-1);" _
+'  + "government debt:c*log(LG_?(-1)/VV_?(-1))")
 
 '--- special adjustment to government income ($pp m)
 smpl %start %end
 p_Bloc.genr YGADJ_? = 0
-smpl %start %latest
 
-call AddEquation(%blocs, "YG government income;-;" _
-  + "dlog(1/(((1/(YG_?-YGADJ_?))*0.4*Y_?(-1)-1)*0.4*Y_?(-1))) = " _
+call AddEquation(%blocs, "YGD net direct taxes and transfers;-;" _
+  + "dlog(1/(0.7/((YGD_?-YGADJ_?)/Y_?(-1)+0.2)-1)) = " _
   + "error correction:" _
-    + "c*log(1/(((1/(YG_?(-1)-YGADJ_?(-1)))" _
-      + "*0.4*Y_?(-2)-1)*0.4*Y_?(-2)));" _
-  + "outstanding debt:0.015*log(LG_?(-1)/Y_?(-1));" _
+    + "c*log(1/(0.7/((YGD_?(-1)-YGADJ_?(-1))/Y_?(-2)+0.2)-1));" _
+  + "outstanding debt:c*log(LG_?(-1)/Y_?(-1));" _
   + "income growth:c*dlog(Y_?);" _
   + "lagged income growth:c*dlog(Y_?(-1));" _
-  + "debt interest:" _
-      +  "-0.1*irm_?(-1)*LG_?(-1)/(100*Y_?(-1))")
+  + "growth of net indirect taxes:c*dlog(VVTX_?/Y_?(-1))")
 
-'NB: imposed debt and debt interest coefficients
-' force income to increase if debt is high and make interest
-'  charges subtract from government's net income
+'--- rejected
+'  + "debt interest:" _
+'      +  "c*irm_?(-1)*LG_?(-1)/(100*Y_?(-1))")
 
 call AddEquation(%blocs, "G government spending;-;" _
   + "dlog(G_?) = " _
   + "error correction:c*log(G_?(-1));" _
-  + "increase in government income:c*dlog(YG_?);" _
   + "government income:c*YG_?(-1)/Y_?(-1);" _
   + "population:c*log(N_?(-1));" _
   + "outstanding debt:c*log(LG_?(-1)/Y_?(-1));" _
   + "current account:c*CA$_?(-1)/Y$_?(-1)")
+'  + "increase in government income:c*d(YG_?)/Y_?(-1);" _
 
 call AddEquation(%blocs, "NGI covered debt;-;" _
   + "dlog(NGI_?) = " _
@@ -157,23 +311,24 @@ call AddEquation(%blocs, "IAGO other govt asset transactions;-R;" _
   + "government balance:0.2*NLG_?/Y_?(-1)")
 
 '========= PRIVATE EXPENDITURE
+call Bound(%tlBound, "IP NFI:-2 pkp VT VVPR")
 
-call AddEquation(%blocs, "SP private savings;-R;" _
+call AddEquation(%blocs, "SP private savings;-;" _
   + "d(SP_?/YP_?(-1)) = " _
   + "error correction:-0.2*SP_?(-1)/YP_?(-2);" _
-  + "growth of private income:c*d(YP_?)/YP_?(-1);" _
+  + "growth of private income:0.3*d(YP_?)/YP_?(-1);" _
   + "wealth:-0.008*d(WP_?(-1))/WP_?(-2);" _
-  + "inflation:c*spvi_?;" _
-  + "short-term interest rate:0.07*irs_?(-1)/100")
+  + "inflation:c*log(1+pi_?/100);" _
+  + "relative income:c*log(YR_?(-1));" _
+  + "share of corporate income:c*VVPR_?(-1)/VV_?(-1);" _
+  + "change in share of income from employment:" _
+    + "c*d(VVEM_?/YP_?)")
 
 'Note: imposed coefficients on the error correction term
 'and the wealth term are derived from a theoretical model
 'that assumes gradual adjustment of savings to achieve a
 'wealth/income ratio similar to the estimated historical
 'average of 5 1/2.
-
-'The imposed coefficient on the real interest rate is the
-'same as the estimated coefficient for inflation.
 
 call AddEquation(%blocs, "pkp real asset price;-;" _
   + "dlog(pkp_?) = " _
@@ -183,15 +338,24 @@ call AddEquation(%blocs, "pkp real asset price;-;" _
 
 'NB: coefficient on capacity utilisation imposed for stability
 
-'--- flow/flow adjustment with lower bound
+'--- unconstrained equation
+'copy IP_* IP1_*
+'  call AddEquation(%blocs, "IP1 private investment;1;" _
+'  + "dlog(IP1_?/V_?(-1)) = " _
+'  + "error correction:c*log(IP1_?(-1)/V_?(-2));" _
+'  + "GDP growth:0.5*dlog(V_?);" _
+'  + "profit growth:c*d(VVPR_?)/V_?(-1);" _
+'  + "bond rate:-0.2*irm_?/100")
+
+'--- imposed coefficients
   call AddEquation(%blocs, "IP private investment;1;" _
-  + "dlog(IP_?/V_?(-1)-0.05) = " _
-  + "error correction:c*log(IP_?(-1)/V_?(-2)-0.05);" _
-  + "GDP growth rate:0.5*dlog(V_?);" _
-  + "bank lending:c*ILN_?(-1)/V_?(-1);" _
+  + "dlog(IP_?/V_?(-1)) = " _
+  + "error correction:c*log(IP_?(-1)/V_?(-2));" _
+  + "GDP growth:0.5*dlog(V_?);" _
+  + "profit growth:0.3*d(VVPR_?)/V_?(-1);" _
   + "bond rate:-0.2*irm_?/100")
 
-'NB: imposed GDP growth and bond rate coefficients prevent unstable feedback
+'NB: imposed GDP growth and bond rate coefficients prevent unstable feedback. The coefficient for profit growth is reduced to allow for simultaneity.
 
 call AddEquation(%blocs, "IV inventory changes;-R;" _
   + "d(IV_?/V_?(-1)) = " _
@@ -205,14 +369,14 @@ call AddEquation(%blocs, "IV inventory changes;-R;" _
 
 'NB: imposed bank lending coefficients prevent unstable feedback
 
-'--- upper bound at 2.5 x national income
+'--- upper bound at 3.5 x national income
 call AddEquation(%blocs, "NFI covered bank lending;-;" _
-  + "dlog(1/(2.5/(NFI_?/Y_?(-1))-1))+4*WLNA_?/LN_?(-1) = " _
-  + "error correction:c*log(1/(2.5/(NFI_?(-1)/Y_?(-2))-1));" _
+  + "dlog(1/(3.5/((2+NFI_?)/Y_?(-1))-1))+4*WLNA_?/LN_?(-1) = " _
+  + "error correction:c*log(1/(3.5/((2+NFI_?(-1))/Y_?(-2))-1));" _
   + "national income:c*log(Y_?(-1));" _
   + "growth of national income:0.3*dlog(Y_?);" _
-  + "liquidity:c*NFF_?/NFI_?(-1);" _
-  + "increase in liquidity:c*d(NFF_?)/NFI_?(-1);" _
+  + "liquidity:c*NFF_?/(2+NFI_?(-1));" _
+  + "increase in liquidity:c*d(NFF_?)/(2+NFI_?(-1));" _
   + "government debt held by banks:c*d(LGF_?)/Y_?(-1);" _
   + "reserves & covered ext position:" _
     + "c*(R$_?(-1)+NXI$_?(-1))/Y$_?(-1)")
@@ -221,6 +385,8 @@ call AddEquation(%blocs, "NFI covered bank lending;-;" _
 '    investment feedback
 
 '========= MONETARY POLICY, RESERVES AND CAPITAL FLOWS
+call Bound(%tlBound, "DP im is nxi$ pvi:-10 LGO " _
+  + "rpaxo$:-0.5 rplx$:-0.5 rpr$:-1")
     
 '--- ceiling; non-bank holdings must not exceed the total
 call AddEquation(%blocs, _
@@ -231,10 +397,10 @@ call AddEquation(%blocs, _
 'NB: LGO must be the first variable on the lhs
 
 call AddEquation(%blocs, "is short-term interest rate;R(12);" _
-  + "dlog(0.4+is_?/100) = " _
-  + "error correction:c*log(0.4+is_?(-1)/100);" _
-  + "inflation:c*log(0.4+pvi_?(-1)/100);" _
-  + "rate of change in inflation:c*dlog(0.4+pvi_?/100);" _
+  + "dlog(is_?/100) = " _
+  + "error correction:c*log(is_?(-1)/100);" _
+  + "inflation:c*log(0.3+pvi_?(-1)/100);" _
+  + "rate of change in inflation:c*dlog(0.3+pvi_?/100);" _
   + "capacity utilisation:c*log(V_?/VT_?)")
 
 'Note: a margin of 40% is allowed to ensure that numerical
@@ -244,17 +410,17 @@ call AddEquation(%blocs, "is short-term interest rate;R(12);" _
 'not change much as inflation and interest rates rise or fall.
 
 call AddEquation(%blocs, "im bond rate;-;" _
-  + "log(0.4+im_?/100) = " _
-  + "short-term rate:c*log(0.4+is_?(-1)/100);" _
-  + "rate of change in short-term rate:c*dlog(0.4+is_?/100);" _
-  + "inflation:c*log(0.4+pvi_?(-1)/100);" _
-  + "rate of change in inflation:c*dlog(0.4+pvi_?/100)")
+  + "log(im_?/100) = " _
+  + "short-term rate:c*log(is_?(-1)/100);" _
+  + "rate of change in short-term rate:c*dlog(is_?/100);" _
+  + "inflation:c*log(0.3+pvi_?(-1)/100);" _
+  + "rate of change in inflation:c*dlog(0.3+pvi_?/100)")
 
 'Note: see note to equation for is
 
-'--- upper bound equal to 1 x national income
+'--- upper bound equal to 80% of national income
 call AddEquation(%blocs, "R$ exchange reserves;-;" _
-  + "dlog(1/(1.0/(R$_?/(rx_?*Y_?(-1)))-1)) = " _
+  + "-dlog(0.8/(R$_?/(rx_?*Y_?(-1)))-1) = " _
   + "valuation ratio:c*log(1+rpr$_?);" _
   + "current account:c*CA$_?/Y$_?(-1);" _
   + "lagged c/a:c*CA$_?(-1)/Y$_?(-1)")
@@ -263,9 +429,9 @@ call AddEquation(%blocs, "rpr$ reserve valuation; 1;" _
   + "log(1+rpr$_?) = " _
   + "global dollar inflation:c*dlog(ph_w)")
 
-'--- upper bound equal to 6 x national income
+'--- upper bound equal to 6.5 x national income
 call AddEquation(%blocs, "NXI$ covered external position;-;" _
-  + "dlog(1/(6.0/(NXI$_?/(rx_?*Y_?(-1)))-1)) = " _
+  + "dlog(1/(6.5/(NXI$_?/(rx_?*Y_?(-1)))-1)) = " _
   + "income growth:c*dlog(Y_?(-1));" _
   + "income level:c*log(Y_?(-1));" _
   + "increase in exchange reserves:c*dlog(R$_?(-1));" _
@@ -285,30 +451,36 @@ copy rx_* rxu_*
 call AddEquation(%blocs, "rxu real exchange rate;-;" _
   + "log(rxu_?/rx_?(-1)) = " _
   + "error correction:c*log(rx_?(-1));" _
-  + "current account:0.3*CA$_?(-1)/(NXI$_?(-1)+M$_?(-1));" _
-  + "external position:0.1*NX$_?(-1)/(rx_?(-1)*Y_?(-1));" _
-  + "inflation:c*d(spvi_?(-1));" _
-  + "global dollar inflation:c*dlog(ph_w)")
+  + "nominal revaluation:c*dlog(1+rxna_?/100);" _
+  + "change in global dollar inflation:c*dlog(ph_w,2);" _
+  + "external position:" _
+    + "c*(R$_?(-1)+AXO$_?(-1)+2*CA_?(-1))/LX$_?(-1);" _
+  + "GDP growth:c*log(V_?/V_?(-5));" _
+  + "relative income:c*YR_?(-1)")
 
-'NB: coefficients are imposed to force adjustment in case of
-'    imbalance in the current account and external position
-  
-'========= CAPACITY UTILISATION AND INFLATION
+'========= INFLATION
+call Bound(%tlBound, "ei:-15 mu:-1 rtx:-1")
 
-call AddEquation(%blocs, "pvi cost inflation;-R;" _
-  + "dlog(0.04+pvi_?/100) = " _
-  + "error correction:c*log(0.04+pvi_?(-1)/100);" _
-  + "capacity utilisation:" _
-    + "c*(1/(1.60-V_?/VT_?)+1/(1.60-V_?(-1)/VT_?(-1)));" _
-  + "real exchange rate:c*dlog(rx_?);" _
-  + "world oil price:c*dlog(pe_w/rx_?)")
+call AddEquation(%blocs, "ei earnings inflation;-R;" _
+  + "dlog(0.15+ei_?/100) = " _
+  + "error correction:c*log(0.15+ei_?(-1)/100);" _
+  + "price inflation:c*log(1+pi_?(-1)/100);" _
+  + "productivity growth:c*dlog(V_?/NE_?);" _
+  + "real exchange rate:c*log(rx_?(-1));" _
+  + "primary producer:c*(vva_?+vve_?)/vv_?")
+
+'--- rejected
+'  + "real exchange rate appreciation:c*dlog(rx_?);" _
+'  + "unemployment rate:c*NU_?/NL_?;" _
+'  + "government debt:c*LGV_?;" _
+'  + "bank deposits:c*DPV_?;" _
 
 '========= CURRENT ACCOUNT
+call Bound(%tlBound, "NIT$:-0.1 NXN$ MM0 pmm0 XA$ XE$ ex")
 
 '--- special adjustment to external transfers ($wpp m)
 smpl %start %end
 p_Bloc.genr BITADJ$_? = 0
-smpl %start %latest
 
 copy BIT$_* BIT$U_*
 call AddEquation(%blocs, "BIT$U net income and transfers;-;" _
@@ -319,8 +491,8 @@ call AddEquation(%blocs, "BIT$U net income and transfers;-;" _
 
 copy NIT$_* NIT$U_*
 call AddEquation(%blocs, "NIT$U covered income and transfers;-;" _
-  + "log((1+NIT$U_?)/(1+NIT$_?(-1))) = " _
-  + "error correction:c*log(1+NIT$_?(-1));" _
+  + "log((0.1+NIT$U_?)/(0.1+NIT$_?(-1))) = " _
+  + "error correction:c*log(0.1+NIT$_?(-1));" _
   + "covered position:c*log(NXN$_?(-1));" _
   + "growth of world exports:c*dlog(X$_W)")
 
@@ -335,9 +507,9 @@ call AddEquation(%blocs, "NIT$U covered income and transfers;-;" _
 copy BA0_* BA0U_*
 call AddEquation(%blocs, _
  "BA0U net exports of primary commodities at base-year prices;-;" _
-  + "(BA0U_?-BA0_?(-1))/V_?(-1) = " _
+  + "(BA0U_?-BA0_?(-1))/V0_?(-1) = " _
   + "world prices:c*d(lpa_?(-1));" _
-  + "GDP growth:-0.05*d(V_?)/V_?(-1)")
+  + "GDP growth:c*d(V0_?)/V0_?(-1)")
 
 'NB: the imposed GDP growth coefficient represents the raw material
 '    content of output
@@ -377,11 +549,11 @@ call AddEquation(%blocs, _
 
 call AddEquation(%blocs, _
  "XE0 exports of energy products at base-year prices;(12);" _
-  + "dlog((1+XE0_?)*(0.01+EX_?(-1))) = " _
+  + "dlog((1+XE0_?)/(0.01+EX_?(-1))) = " _
   + "error correction:c*log((1+XE0_?(-1))/(0.01+EX_?(-1)))")
 
 call AddEquation(%blocs, "ME$ imports of energy products; 1;" _
-  + "dlog(ME$_?/ME0_?)= " _
+  + "dlog(ME$_?/ME0_?) = " _
   + "world prices:c*dlog(pe_w)")
 
 copy XE$_* XE$U_*
@@ -428,9 +600,11 @@ for !j = 1 to nBloc
     %b = t_Bloc(!i, 1)
     %s = "sxm_" + %b + "_"+ %p
     if @isobject(%s) then
+      smpl %startest %endest
       if @elem({%s}, %base) >= 0.05 _
         and @min({%s}) > 0.001 then
         %l = %l + %b + "_" + %p + " "
+        smpl %start %latest
         series ucx$_{%b}_{%p} = ucx$_{%b}
       endif
     endif
@@ -565,6 +739,10 @@ call AddEquation(%blocs, "JLX life expectancy at birth;(1);" _
 ' PROCESSING
 '==================================================================
 
+'=========== check bounds
+%s = @str(@val(%startest)-4)
+call CheckBound(%tlBound, %s, %endest)
+
 !qList = @upper(@left(%equation_listing,1)) = "Y"
 !qCompare = @upper(@left(%comparisons,1)) = "Y"
 !qGraph = @upper(@left(%prediction_graphs,1)) = "Y"
@@ -612,7 +790,7 @@ for !i = 1 to nEq
   if @instr(%spec, "R") <> 0 then
     !npass = 6
     %tfit = "intercepts and ar(1) estimated on data for " _
-    + %startfit + "-" + %latest
+    + %startfit + "-" + %endest
     %spec = @replace(%mode,"R","")
   endif
   '--- default specification is type 2
@@ -667,10 +845,10 @@ for !i = 1 to nEq
 
   for !iem = !iem0 to !npass
     '--- reduced sample for pass 6
-    if !iem = 6 then smpl %startfit %latest endif
+    if !iem = 6 then smpl %startfit %endest endif
 
     '--- check restricted list of variants
-    if !iem > 4 or %tlspec = "" or _
+    if !iem > 4 or (%tlspec = "" and !iem < 3) or _
                    @instr(%tlspec, @str(!iem)) > 0 then
       call PoolEstimation(%var, !iem, p_{%var}, %spec, %eq)
       '--- save a copy for listings and predicted value calculation
@@ -726,7 +904,7 @@ for !i = 1 to nEq
     %ss = %var + "_?_f " + %var + "_?"
     %tt = "Actual (blue), Predicted (red)"
     '--- number of columns in composite graph display
-    !n = 6
+    !n = 5
     if %var = "sxm" then !n = 7 endif
     call BlocGraph("grf_" + %var, %desc, %list, %ss, %tt, "", "", _
       !n, %first, %latest, %latest)
@@ -741,16 +919,16 @@ next
 smpl %start %end
 series pa_w_ins = 0
 smpl %startest %endest
-%lhs = "dlog(pa_w)-pa_w_ins"
-equation eq_pa_w.ls {%lhs} _
-  log(pa_w(-1)) log(V_W(-1)) dlog(V_W) c ar(1)
+equation eq_pa_w.ls dlog(pa_w)-pa_w_ins _
+  log(pa_w(-1)) dlog(V_W,2) dlog(V_W(-1)) c ar(1)
 
 '--- reestimate intercept and ar
-'smpl %startfit %endest
-'%s = @str(eq_pa_w.@coefs(1)) + "*log(pa_w(-1))" _
-'   + "+" + @str(eq_pa_w.@coefs(2)) + "*log(V_W(-1))"
-'%s = %lhs + "-(" + %s + ") c ar(1)"
-'eq_pa_w.ls {%s}
+smpl %startfit %endest
+%s = @str(eq_pa_w.@coefs(1)) + "*log(pa_w(-1))" _
+   + "+" + @str(eq_pa_w.@coefs(2)) + "*dlog(V_W,2)" _
+   + "+" + @str(eq_pa_w.@coefs(3)) + "*dlog(V_W(-1))"
+%s = "dlog(pa_w)-pa_w_ins-(" + %s + ") c ar(1)"
+eq_pa_w.ls {%s}
 
 '--- market shares for exports of manufactures
 smpl %start %end
@@ -1035,8 +1213,14 @@ setcell(tQL,!i,5,"("+@str(@abs(p2.@tstats(1)),"f.1")+")","c")
 setcell(tQL,!i,6,"residual ar(1)","c")
 %merg = @str(!i)+",6,"+@str(!i)+",7"
 tQL.setmerge({%merg})
-setcell(tQL,!i,8,p2.@coefs(2),"r",3)
-setcell(tQL,!i,9,"("+@str(@abs(p2.@tstats(2)),"f.1")+")","c")
+if %Fit = "" then
+  !nest = !nest+1
+else
+  !nest = 2
+endif  
+setcell(tQL,!i,8,p2.@coefs(!nest),"r",3)
+setcell(tQL,!i,9,"("+@str(@abs(p2.@tstats(!nest)), _
+  "f.1")+")","c")
 
 '--- std error of equation
 !i = !i + 1
@@ -1381,5 +1565,101 @@ while 1
 wend
 
 iSRow = iSRow + 10 + 2*!nCoef
+
+endsub
+
+subroutine local Bound(string %p_tlVar, string %p_tl)
+'======================================================
+'Add to global list of bounded variables
+'
+' Call: p_tlVar  cumulative list
+'       p_tl  variables to add to the list
+'
+' Ret: p_tlVar  updated list
+'
+' Note: variable names may be followed by a lower bound
+'                 e.g. NUVM:-0.01
+'       in this case the check will be for values less than
+'       or equal to the lower bound
+'
+'---------------------------------------------------------------
+%tl = %p_tl
+if %p_tlVar = "" then %p_tlVar = " " endif
+while %tl <> ""
+  call Token(%tl, " ", %vmin)
+  '--- check for lower bound
+  call Token(%vmin, ":", %v)
+  !vmin = @val(%vmin)
+  '--- check whether the variable is already listed
+  %v = %v + ":"
+  !i = @instr(%p_tlVar, " " + %v)
+  if !i = 0 then
+    %p_tlVar = %p_tlVar + %v + %vmin + " "
+  '--- if listed, check the lower bound
+  else
+    %tlh = @left(%p_tlVar, !i-1)
+    %trh = @mid(%p_tlVar, !i)
+    '--- extract the variable name and lower bound
+    call Token(%trh, " ", %vmin0)
+    call Token(%vmin0, ":", %s)
+    !vmin0 = @val(%vmin0)
+    '--- if the new lower bound is more restrictive, replace
+    if !vmin > !vmin0 then
+      %p_tlVar = %tlh + %v + %vmin + %trh
+    endif  
+  endif
+wend
+endsub
+
+subroutine CheckBound(string %p_tlVar, string %p_Start, _
+  string %p_End)
+'======================================================
+'Check lower bounds
+'
+' Call: p_tlVar  list of variables to check
+'       p_Start  first year of sample
+'       p_End    last year of sample
+'
+' Ret:
+'
+'---------------------------------------------------------------
+call pLog("checking lower bounds " + %p_Start + " " + %p_End)
+%tl = %p_tlVar
+!i0 = @val(%Start) - 1
+!is = @val(%p_Start) - !i0
+!ie = @val(%p_End) - !i0
+while %tl <> ""
+  call Token(%tl, " ", %vmin)
+  if %vmin <> "" then
+    call Token(%vmin, ":", %v)
+    if %vmin = "" then
+      !vmin =  0
+    else  
+      !vmin = @val(%vmin)
+    endif
+    !n = 0
+    !vminmin = !vmin + 1
+    %tmsg = ""
+    %tmsg1 = ""
+    for !i = 1 to nBloc
+      %s = %v + "_" + t_Bloc(!i, 1)
+      for !i1 = !is to !ie
+        !v = {%s}(!i1)
+        if !v = NA then
+          %tmsg1 = %s + " " + @str(!i1+!i0) + " NA"
+        else
+          if !v <= !vmin then
+            if !v < !vminmin then
+              !vminmin = !v
+              %tmsg = %s + " " + @str(!i1+!i0) + " " + @str(!v)
+            endif
+          endif
+        endif
+      next
+    next
+    if %tmsg <> "" then call pLog(%tmsg) endif
+    if %tmsg1 <> "" then call pLog(%tmsg1) endif
+  endif
+wend
 
 endsub

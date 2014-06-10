@@ -1,6 +1,6 @@
 'LIBRARY: zlibg.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 4.6
+' CAM version 5.0
 '
 ' library routines for graphs
 '
@@ -95,11 +95,12 @@ while %lib_b <> ""
   call zColor(%lib_g, !lib_nser)
 
   '--- shade the forecast period
-  if @val(%Last) > @val(%Endfit) then
-    %lib_s = @str(@val(%Endfit)+1) + " " + %Last
-    {%lib_g}.draw(shade,b) {%lib_s}
+  if %Endfit <> "" then
+    if @val(%Last) > @val(%Endfit) then
+      %lib_s = @str(@val(%Endfit)+1) + " " + %Last
+      {%lib_g}.draw(shade,b) {%lib_s}
+    endif
   endif
-
   call Token(%lib_tlBloc, " ", %lib_b)
 wend
 
@@ -171,7 +172,7 @@ if nCol = 0 then
   endif
 else
   !lib_n = nCol
-endif    
+endif
 {%lib_g}.align(!lib_n,2,1.5)
 
 endsub
@@ -357,9 +358,11 @@ endif
 '--- set common properties for sub-graphs
 
 '--- shade the forecast period
-if @val(%Last) > @val(%Endfit) then
-  %lib_s = @str(@val(%Endfit)+1) + " " + %Last
-  {%lib_g}.draw(shade,b) {%lib_s}
+if %Endfit <> "" then
+  if @val(%Last) > @val(%Endfit) then
+    %lib_s = @str(@val(%Endfit)+1) + " " + %Last
+    {%lib_g}.draw(shade,b) {%lib_s}
+  endif
 endif
 
 '--- check the scale argument
