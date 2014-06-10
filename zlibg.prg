@@ -1,6 +1,6 @@
 'LIBRARY: zlibg.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 5.0
+' CAM Version 5.1
 '
 ' library routines for graphs
 '

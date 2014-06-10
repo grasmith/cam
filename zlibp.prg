@@ -1,6 +1,6 @@
-'PROGRAM: zlibp.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: zlibp.prg     Copyright (C) 2012,2013 Alphametrics Co. Ltd.
 '
-' CAM version 5.0  AUGUR
+' CAM Version 5.1
 '
 ' library functions for presentations
 '
@@ -8,18 +8,19 @@
 '
 '   SPGraph     make a graph tableau
 '
-' Graph tableaus may be put on different pages of the workfile.
+' Graph tableaus may be put on different pages of the ' workfile.
 '
-' A graph tableau has a title and one or more graphs arranged
-' in a grid. Graphs may cover different topics and may be
-' repeated for specified geo codes (blocs, groups or world).
-' The tableau may specify a list of scenarios for comparison
-' in each graph. Series in one graph may cover different variables,
+' A graph tableau has a title and one or more graphs
+' arranged in a grid. Graphs may cover different
+' topics and may be repeated for specified geo codes
+' (blocs, groups or world). The tableau may specify a
+' list of scenarios for comparison in each graph.
+' Series in one graph may cover different variables,
 ' geo codes and/or scenarios.
 '
 ' colours for up to 14 series (allocated in sequence)
-' red blue gray green purple cyan orange black pink brown
-' olive teal mint plum
+'  red blue gray green purple cyan orange black pink
+'  brown olive teal mint plum
 '
 ' the following may be used for the graph backround
 %blyellow = "255,255,190"

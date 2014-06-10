@@ -1,6 +1,6 @@
-'LIBRARY: zlibs.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'LIBRARY: zlibs.prg     Copyright (C) 2012,2013 Alphametrics Co. Ltd.
 '
-' CAM version 5.0
+' CAM Version 5.1
 '
 ' model solution routines
 '
@@ -56,9 +56,11 @@ if not (t_Settings(3,2) = "" or t_Settings(3,2) = "0p") then
 endif
 
 '--- check rules and perform shock analysis if required
-call pRuleCheck(m_wm, t_Rule, nRule, %p_CheckStart)
+call pRuleCheck(p_m, t_Rule, nRule, %p_CheckStart)
 
 '--- generate the scenario
+%s = t_Settings(4,2)
+p_m.scenario() %s
 %first = @str(@val(%p_Prior)+1)
 call pLog("solving for " + %first + "-" + %p_Horizon)
 call AddRulesToModel(t_Rule, nRule, p_m, "", %p_Prior, %p_Horizon)
@@ -68,7 +70,8 @@ call AddRulesToModel(t_Rule, nRule, p_m, "", %p_Prior, %p_Horizon)
 ' i initialise values: p prior period values (default a actuals)
 ' o solution method: g gauss-seidel (default b broyden)
 ' v diagnostics: t trace (default trace)
-%s = "g=n,i=p,o=b,v=t"
+' z zero small results: n don't zero (default zero if abs<1e-7)
+%s = "g=n,i=p,o=b,v=t,z=n"
 if %p_Solopt <> "" then %s = %s + "," + %p_Solopt endif
 call SolveModel(p_m, %s, %p_Prior, %p_Horizon)
 

@@ -1,17 +1,17 @@
-'PROGRAM: sol0.prg       Copyright (C) 2012,2013 Alphametrics Co. Ltd.
+'PROGRAM: sol0.prg       Copyright (C) 2012,2013,2014 Alphametrics Co. Ltd.
 '
-' CAM version 5.0 FEPS variant
+' CAM version 5.1 EUR variant
 '
 ' Baseline projection (main version)
 '
-' Assumes alignment up to 2012
+' Assumes alignment up to 2014
 '
 ' Run this program after sol0p.prg (alignment) and before running
 ' other simulations
 '
 ' The program reads SOL0p.wf1 and creates SOL0.wf1
 '
-' updated: FC 08/05/2013
+' updated: FC 11/01/2014
 '
 ' Note: adjustments are made using add factors (_a).
 '
@@ -41,7 +41,7 @@ call CreateModelFile("SOL0P", %wkfile)
 delete m_wm0p t_Rule* nRule*
 
 '--- update settings
-call pLog("SOL0 PROGRAM v0805")
+call pLog("SOL0 PROGRAM v1101")
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)
 t_Settings(3,2) = "0"
@@ -90,7 +90,7 @@ rxna_tar_eus = 0
 rxna_tar_eue = 0
 
 '--- trend adjustments
-'--- reduced growth of carbon energy supply in UK, EU and CN
+'--- reduced growth of carbon energy supply
 EPC_PL_ins = -0.01
 EPC_EUW_ins = -0.01
 EPC_UK_ins = -0.01
@@ -98,7 +98,7 @@ EPC_EUN_ins = -0.01
 EPC_CN_ins = -0.02
 
 '--- nuclear energy supply
-'    reduced trends in US, CA, CN, CIS and FR
+'    reduced trends
 EPN_US_a = -0.02
 EPN_OD_a = -0.03
 EPN_CN_a = -0.02
@@ -107,10 +107,25 @@ EPN_FR_a = -0.02
 '    Japan gradual restart after 2012 closedown
 EPN_JA_a = 0.0
 
-'--- Japan, China and India: deflation
-ei_JA_a = 0.05
-ei_CN_a = 0.15
+'--- reduced saving
+SP_US_a = -0.01
+SP_CN_a = -0.01
+SP_UK_a = -0.01
+SP_IT_a = -0.01
+SP_OD_a = -0.005
+
+'--- reduced losses on liabilities
+rplx$_us_a = -0.005
+rplx$_uk_a = -0.005
+
+'--- avoid deflation
+ei_JA_a = 0.1
+ei_EAH_a = 0.1
+ei_CN_a = 0.2
 ei_IN_a = 0.1
+ei_CI_a = 0.1
+ei_DE_a = 0.05
+ei_PL_a = 0.05
 
 call Limit(95, "ALL")
 '==================================================================

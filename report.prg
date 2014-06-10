@@ -1,6 +1,6 @@
 'PROGRAM: report.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 5.0
+' CAM Version 5.1
 '
 ' program to create reports
 '
@@ -23,7 +23,7 @@ include "ztab"
 '------------------------------------------------------------------
 
 '--- coverage of graphs
-%repgeo = "BG"                  'blocs and bloc groups
+%repgeo = "FOG"              'blocs and bloc groups
 
 '--- range of years
 %repstart = "1980"
@@ -38,13 +38,13 @@ include "ztab"
 '%scCompTitle = "Alignment"          'title in target workfile
 
 '--- output options
-%graphs = "No"
+%graphs = "Yes"
 '--- comparison graphs (if not Y, graph main data only)
-%graphcomp = "No"
-%markets = "No"
+%graphcomp = "Yes"
+%markets = "Yes"
 %tables = "No"
 %analysis = "No"
-%csv = "Yes"
+%csv = "No"
 
 '==================================================================
 pageselect data

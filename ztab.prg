@@ -1,6 +1,6 @@
-'PROGRAM: ztab.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: ztab.prg     Copyright (C) 2012,2013 Alphametrics Co. Ltd.
 '
-' CAM version 5.0
+' CAM Version 5.1
 '
 ' analysis table definitions
 '

@@ -1,6 +1,6 @@
-'PROGRAM: zdef.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: zdef.prg          Copyright (C) 2012,2014 Alphametrics Co. Ltd.
 '
-' CAM version 5.0
+' CAM version 5.1
 '
 ' program segment to build the core model
 '
@@ -8,7 +8,7 @@
 ' sub-models, supplies the sub-model identities and combines
 ' them into the core model m_wm
 '
-' updated: FC 15/04/2013
+' updated: FC 11/01/2014
 '
 ' NB: aligned behavioural variables assigned to the inner sub-model
 ' are listed at the top of the routine below. Identities are assigned
@@ -93,8 +93,10 @@ series NIMUA_W = {%s}
 
 call AppendIdent( _
   "W;o;" _
-  + "N_? NIMU_? " _
+  + "N_? NV_? NP_? NOP_? NWP_? NIMU_? " _
   + "NIMUA_?=" + %s + " " _
++ ":G;o;" _
+  + "N_? NV_? NP_? NOP_? NWP_? " _
 + ":B;o;" _
   + "NIM_?=NIMU_?+NIMU_W*(NIMU_?-@abs(NIMU_?))" _
     + "/(NIMUA_W-NIMU_W) " _
@@ -102,10 +104,11 @@ call AppendIdent( _
   + "NVM_?=NVM_?(-1)+DNNVM_?+NIM_?/4 " _
   + "NYF_?=NYF_?(-1)+DNNYF_?+NIM_?/4 " _
   + "NYM_?=NYM_?(-1)+DNNYM_?+NIM_?/4 " _
-  + "NOP_?=NOF_?+NOM_? " _
   + "NPF_?=NYF_?+NVF_? " _
   + "NPM_?=NYM_?+NVM_? " _
+  + "NV_?=NVF_?+NVM_? " _
   + "NP_?=NPF_?+NPM_? " _
+  + "NOP_?=NOF_?+NOM_? " _
   + "N_?=NCP_?+NP_? " _
   + "NWP_?=N_?-NCP_?-NOP_? " _
   + "NLYF_?=NLNYF_?*NYF_?/100 " _
@@ -149,11 +152,13 @@ call AppendIdent( _
 '    other variables (inner model)
 
 '--- adjustment for real exchange rates
-' the weighted average adjusted real exchange rate
-'    sum(rxu*H)/(rxadj*H_W)
-' should be equal to 1
-' implying the following identity
-'    rxadj = sum(rxu*H)/H_W
+' domestic dollar deflator ph = _H$/H
+' world dollar deflator ph_w = sum(ph.H)/sum(H)
+' real exchange rate rx = ph/ph_w
+' implying ph_w = sum(ph_w.rx.H)/sum(H)
+' or sum(rx.H) = sum(H)
+' the required adjustment factor is
+'   rxadj = rx/rxu = sum(H)/sum(rxu.H)
 
 copy XIT$_* XIT$U_*
 series XIT$U_W = XIT$_W
@@ -198,7 +203,9 @@ call AppendIdent( _
 
 call AppendIdent( _
   "W;i;" _
-  + "Y_? V_? " _
+  + "Y_? V_? VV_? VV$_? " _
++ ":G;i;" _
+  + "VV_? VVN_?=VV_?/N_? " _
 + ":B;i;" _
   + "Y_?=H_?+CA$_?/rx_? " _
   + "Y$_?=Y_?*rx_? " _
@@ -214,6 +221,7 @@ call AppendIdent( _
   + "VT_?=1.05*@movav(V_?,6)*exp(0.3*(log(V_?/V_?(-6)))) " _
 + ":BW;i;" _
   + "YN_?=Y_?/N_? " _
+  + "VVN_?=VV_?/N_? " _
   + "YR_?=YN_?/YN_W " _
 )
 
@@ -250,7 +258,7 @@ call AppendIdent( _
 call AppendIdent( _
   "B;i;" _
   + "YG_?=YGD_?+VVTX_? " _
-  + "NLG_?=YG_?-G_? " _
+  + "NLG_?=YG_?-G_?+NLGADJ_? " _
 + ":B;o;" _
   + "slgx_?=1-log(1+YR_?)/2 " _
   + "rplgo_?=slgx_?*ph_?(-1)/ph_?+(1-slgx_?)*rpfa_? " _
@@ -365,6 +373,7 @@ call AppendIdent( _
   + "ME0_?=ME0U_?*XE0_W/ME0U_W " _
   + "MM0_?=MM0U_?*XM0_W/MM0U_W " _
   + "MS0_?=MS0U_?*XS0_W/MS0U_W " _
+  + "MMH_?=C_?+0.4*G_?+2*(IP_?+IV_?)+(X$_?+2*XM$_?)/rx_? " _
 )
 
 '--- total exports of manufactures from each bloc

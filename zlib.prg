@@ -1,6 +1,6 @@
 'LIBRARY: zlib.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 5.0
+' CAM Version 5.1
 '
 ' library routines
 '
@@ -576,7 +576,7 @@ if %Dest = "" then
 else
   %lib_s = %Dest
 endif
-call pLog("copying " + %lib_s + " for " + %First _
+call pLog("copying " + %lib_s + " from " + %First _
   + " - " + %Last + " from " + %Source)
 smpl %First %Last
 !lib_n2 = @strlen(%Source)
@@ -611,10 +611,9 @@ subroutine local CountTokens(string %p_t, string %p_a, _
 '
 '---------------------------------------------------------------
 p_n = 0
-%t1 = @trim(%p_t)
-while 1
-  call Token(%t1, %p_a, %r)
-  if %r = "" then exitloop endif
+%tl = @trim(%p_t)
+while %tl <> "" 
+  call Token(%tl, %p_a, %r)
   p_n = p_n + 1
 wend
 endsub

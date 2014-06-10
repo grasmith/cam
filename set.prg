@@ -1,6 +1,6 @@
 'PROGRAM: set.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 5.0 FEPS variant
+' CAM version 5.1 EUR variant
 '
 ' settings
 '
@@ -23,7 +23,7 @@ include "zrep"
 include "zimpact"
 
 '--- title for reports
-%sysTitle = "CAM 5.0 with FEPS blocs"
+%sysTitle = "CAM 5.0 with EUR blocs"
 
 '--- data source (historical series)
 !nSeries = 3066
@@ -47,47 +47,46 @@ include "zimpact"
 %yrext = "1990 2000 2007 2008 2009 2010 2011 2012"
 
 '--- graph coverage
-'    B blocs, C countries only, O other blocs only,
+'    B blocs, F first blocs, O other blocs,
 '    G groups, W world
 %repgeo = "BG"
 %subgraphs = "No"
 
 '--- blocs
-!nCountry = 11
+!nFirstBlocs = 10
 %blocs = _
-       + "us;USA:" _
-       + "uk;UK:" _
+       + "eun;Nordic countries:" _
        + "de;Germany:" _
+       + "euw;Other West Europe:" _
+       + "uk;UK:" _
        + "fr;France:" _
        + "it;Italy:" _
        + "es;Spain:" _
-       + "pl;Poland:" _
-       + "tr;Turkey:" _
-       + "ja;Japan:" _
-       + "cn;China:" _
-       + "in;India:" _
-       + "eun;North Europe:" _
-       + "euw;Other West Europe:" _
        + "eus;Other South Europe:" _
+       + "pl;Poland:" _
        + "eue;Other East Europe:" _
+       + "us;USA:" _
        + "od;Other Developed:" _
+       + "ja;Japan:" _
        + "eah;East Asia High Income:" _
+       + "tr;Turkey:" _
        + "ci;CIS:" _
        + "wa;West Asia:" _
-       + "ams;South America:" _
-       + "acx;Central America:" _
-       + "eao;Other East Asia:" _
-       + "aso;Other South Asia:" _
        + "afn;North Africa:" _
-       + "afs;Other Africa"
+       + "afs;Other Africa:" _
+       + "acx;Central America:" _
+       + "ams;South America:" _
+       + "cn;China:" _
+       + "eao;Other East Asia:" _
+       + "in;India:" _
+       + "aso;Other South Asia"
 
 '--- bloc aggregates
 %groups = "eu;Europe;uk de fr it es pl eun euw eus eue:" _
-        + "am;America;us od acx ams:" _
+        + "nam;North America;us od:" _
+        + "lam;Latin America;acx ams:" _
         + "af;Africa;afn afs:" _
-        + "oa;Other Asia;ci tr wa in aso:" _
-        + "ea;East Asia;ja cn eah eao:" _
-        + "cwa;European neighbours;ci tr wa afn:" _
-        + "nam;North America;us od acx:"
+        + "oa;South and West Asia;ci tr wa in aso:" _
+        + "ea;East Asia;ja cn eah eao:"
 
 '=======================================================

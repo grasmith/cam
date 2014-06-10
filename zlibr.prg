@@ -1,6 +1,6 @@
-'PROGRAM: zlibr.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: zlibr.prg          Copyright (C) 2012,2014 Alphametrics Co. Ltd.
 '
-' CAM version 5.0
+' CAM Version 5.1
 '
 ' library routines for scenario rules
 '
@@ -8,7 +8,7 @@
 ' beginning with lib_ are reserved and should not be used
 ' elsewhere.
 '
-' updated: FC 25/04/2013
+' updated: FC 11/01/2014
 '
 '---------------------------------------------------------------
 '
@@ -343,12 +343,18 @@ else
   else
     %lib_s = "p_" + %lib_root
     if @isobject(%lib_s) then
+      vSE = p_{%lib_root}.@se
       !lib_i = 0
       call PoolId(p_{%lib_root}, %lib_mem, !lib_i)
-      if !lib_i = 0 then
-        vSE = p_{%lib_root}.@se
-      else
-        vSE = @sqrt(p_{%lib_root}.@residcov(!lib_i,!lib_i))
+      if !lib_i > 0 then
+        !lib_vse = _
+          @sqrt(p_{%lib_root}.@residcov(!lib_i,!lib_i))
+        '--- check for very small std error at bloc level
+        if !lib_vse > 0.3*vSE then
+          vSE = !lib_vse
+        else
+          vSE = 0.3*vSE
+        endif          
       endif
     endif
   endif  
@@ -976,7 +982,7 @@ for !ip = 1 to nRule
       call SetShockGroup(tRule, nRule, !ip, %first, %pr)
       smpl %first %last
       mode verbose
-      m.solve(o=g,i=p,m=10000)
+      m.solve(i=p,m=10000)
       t_Settings(8,2) = "RULECHECK: " + %v + "::" + %pr
       mode quiet
       table t

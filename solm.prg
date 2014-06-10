@@ -1,6 +1,6 @@
-'PROGRAM: solm.prg          Copyright (C) 2012, 2013 Alphametrics Co. Ltd.
+'PROGRAM: solm.prg          Copyright (C) 2012, 2014 Alphametrics Co. Ltd.
 '
-' CAM version 5.0                           
+' CAM Version 5.1   EUR variant
 '
 ' multiplier analysis summary reports
 '
@@ -19,7 +19,7 @@
 '
 ' WARNING: execution time may be 1 minute or more per shocked bloc.
 '
-' updated: FC 30/07/2013
+' updated: FC 11/01/2014
 '
 '==================================================================
 ' OPTIONS
@@ -31,7 +31,7 @@ subroutine solm
 ' see DEFINITIONS below for lists of variables to be shocked and
 ' results to be reported
 
-%shockblocs = "US CN DE AM"
+%shockblocs = "US CN DE LAM"
 
 '==================================================================
 ' PREFACE
@@ -42,7 +42,7 @@ call CreateModelFile("SOL0", %wkfile)
 delete m_wm0
 
 '--- update settings
-call pLog("SOLM PROGRAM v3007")
+call pLog("SOLM PROGRAM v1101")
 %wkfile = "SOLM"
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)
@@ -95,7 +95,7 @@ call pCreateScenario(%gm, %alias)
   + "NUL:unemployment rate;" _
   + "CO2:CO2 emissions"
 %otherimpact = "V:GDP;NE:employment;CA$:current account"
-%blocimpact = "US DE FR IT JA CN WA IN"
+%blocimpact = "US DE FR IT JA CN OWA IN"
 %worldimpact = "V_W:GDP;X$_W:exports;" _
   + "pe_w:oil price"
 

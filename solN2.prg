@@ -1,78 +1,64 @@
-'PROGRAM: solN2.prg    Copyright (C) 2012,2013 Alphametrics Co. Ltd.
+'PROGRAM: solN2.prg          Copyright (C) 2013,2014 Alphametrics Co. Ltd.
 '
-' CAM version 5.0
+' CAM version 5.1   EUR variant
 '
-' Reflation in Europe with reduced government
+' Long-term impact of the SGP, ESM and TSCG
 '
-' The program reads SOLN1.wf1 and creates SOLN2.wf1
+' The program reads SOL1.wf1 and creates SOLN2.wf1
 '
-' updated: FC 30/07/2013
-'
-' differences from SOLN1
-'
-' Europe
-'  restrictions on national budgets are removed
-'  government spending and labour market policies to create jobs
+' updated: FC 11/01/2014
 '
 '==================================================================
 ' OPTIONS
 '==================================================================
-include "set"
-call solN2
+'include "set"
+'call solN2
 '------------------------------------------------------------------
 subroutine solN2
 
-%actual = "2013"
+'--- projection period
+%actual = "2014"
 
 %graphs = "Yes"
-%graphcomp = "Yes"
+%graphcomp = "No"
 %markets = "No"
 %tables = "No"
 %analysis = "No"
 %csv = "No"
 
-'==================================================================
+'================================================================
 ' PREFACE
 '==================================================================
 mode quiet
 %wkfile = "SOLN2"
 call CreateModelFile("SOLN1", %wkfile) 
-delete m_wmN1
+delete m_wmn1
 
 '--- update settings
-call pLog("SOLN2 PROGRAM v3007")
-t_Settings(5,2) = "N1"
-t_Settings(6,2) = "Struggling on with US China hegemony"
+call pLog("SOLN2 PROGRAM v1101")
+t_Settings(5,2) = "0"
+t_Settings(6,2) = "Baseline"
 t_Settings(3,2) = "N2"
-t_Settings(4,2) = "Reflation in Europe"
-
+t_Settings(4,2) = "SGP and TSCG"
 call pCreateScenario(%gm, %alias)
 
 '==================================================================
-' RULE DEFINITIONS
+' SCENARIO DEFINITIONS
 '==================================================================
 
 smpl %actual+1 %end
 
-'--- budget rules
-for %b DE ES FR IT PL UK EUE EUS EUW
-'--- unemployment target: within 1% of lowest rate in 
-'    the last 20 years, but not exceeding 8%
-  series NUL_{%b}_TAR = @min(NUL_{%b}, "1993 2012")+1
-  NUL_{%b}_TAR = @iif(NUL_{%b}_TAR > 8, 8, NUL_{%b}_TAR)
-  call DropRules("YG_"+%b+" G_"+%b+" IAGO_"+%b)
-  call Ceiling("NULVM_"+%b,"100*NU_"+%b+"/NL_"+%b, _
-    "NUL_"+%b+"_TAR",10,20)
-  call Link("NULVF_" + %b, "NULVM_" + %b, 1)
-  call Link("NULYM_" + %b, "NULVM_" + %b, 1)
-  call Link("NULYF_" + %b, "NULVM_" + %b, 1)
-  call Link("G_" + %b, "NULVM_" + %b, -1)
-'--- cancel negative investment impact of austerity policies
-  IP_{%b}_ins = 0
+'--- EU debt ceilings
+for %b EUN DE EUW UK FR IT ES EUS PL EUE
+  call DropRules("NULVM_"+%b+" NULVF_"+%b+" NULYM_"+%b _
+    + " NULYF_"+%b+" G_"+%b)
+  call DropRules("NLNVM_"+%b+" NLNVF_"+%b+" NLNYM_"+%b _
+    + " NLNYF_"+%b)
+  call Ceiling("G_"+%b, "LG_"+%b+"/VV_"+%b, "0.6", 0.1, 10)
+  call Link("IAGO_"+%b, "G_"+%b, 0.25)
 next
 
 call Limit (95, "ALL")
-
 '==================================================================
 ' PROCESSING
 '==================================================================

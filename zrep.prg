@@ -1,10 +1,10 @@
-'PROGRAM: zrep.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: zrep.prg     Copyright (C) 2012,2014 Alphametrics Co. Ltd.
 '
-' CAM version 5.0
+' CAM Version 5.1
 '
 ' subroutine to create standard outputs
 '
-' updated: FC 26/10/2011
+' updated: FC 11/01/2014
 '
 '================================================
 
@@ -1203,7 +1203,7 @@ subroutine ListGeo(string %p_geo, scalar p_ncol, _
 '==============================================================
 'return a list of area codes or names
 '
-' Call: p_geo  B blocs, C countries, O other blocs
+' Call: p_geo  B blocs, F first blocs, O other blocs
 '              G groups, W world
 '       p_ncol 1 codes, 2 names
 '
@@ -1213,11 +1213,11 @@ subroutine ListGeo(string %p_geo, scalar p_ncol, _
 if %p_geo = "B" then
   !lib_is = 1
   !lib_ie = nBloc
-else if %p_geo = "C" then
+else if %p_geo = "F" then
   !lib_is = 1
-  !lib_ie = !nCountry
+  !lib_ie = !nFirstBlocs
 else if %p_geo = "O" then
-  !lib_is = !nCountry + 1
+  !lib_is = !nFirstBlocs + 1
   !lib_ie = nBloc
 else if %p_geo = "G" then
   !lib_is = nWorld + 1

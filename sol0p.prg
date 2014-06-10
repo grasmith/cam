@@ -1,6 +1,6 @@
 'PROGRAM: sol0p.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 5.0
+' CAM version 5.1
 '
 ' Baseline projection (main version)
 '
@@ -20,7 +20,7 @@ call sol0p
 '------------------------------------------------------------------
 subroutine sol0p
 
-%graphs = "Yes"
+%graphs = "No"
 %graphcomp = "No"
 %markets = "No"
 %tables = "No"

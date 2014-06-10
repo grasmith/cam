@@ -1,6 +1,6 @@
 'PROGRAM: soltest.prg          Copyright (C) 2013 Alphametrics Co. Ltd.
 '
-' CAM version 5.0 utility
+' CAM Version 5.1   EUR variant
 '
 ' Quick baseline (optional)
 '

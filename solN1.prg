@@ -1,42 +1,31 @@
-'PROGRAM: solN1.prg          Copyright (C) 2013 Alphametrics Co. Ltd.
+'PROGRAM: solN1.prg    Copyright (C) 2013,2014 Alphametrics Co. Ltd.
 '
-' CAM version 5.0
+' CAM version 5.1   EUR variant
 '
-' Struggling on with reduced government
+' growth and employment targets
 '
 ' The program reads SOL0.wf1 and creates SOLN1.wf1
 '
-' updated: FC 30/07/2013
-'
-' differences from sol0
-'  US net revenue target, debt ceiling, devaluation,
-'     energy saving
-'  CN growth rate, budget balance, c/a balance, energy saving
-'  OD and EU net revenue targets
-'  OD, JA and EU debt ceilings
-'  negative investment impact of EU crisis
-'  more relocation of industry to India and S America
-'  more raw material exports from Africa and S America
+' updated: FC 11/01/2014
 '
 '==================================================================
 ' OPTIONS
 '==================================================================
-include "set"
-call solN1
+'include "set"
+'call solN1
 '------------------------------------------------------------------
 subroutine solN1
 
-'--- projection period
-%actual = "2012"
+%actual = "2014"
 
 %graphs = "Yes"
-%graphcomp = "Yes"
-%markets = "Yes"
+%graphcomp = "No"
+%markets = "No"
 %tables = "No"
 %analysis = "No"
 %csv = "No"
 
-'================================================================
+'==================================================================
 ' PREFACE
 '==================================================================
 mode quiet
@@ -45,71 +34,59 @@ call CreateModelFile("SOL0", %wkfile)
 delete m_wm0 *_0p
 
 '--- update settings
-call pLog("SOLN1 PROGRAM v3007")
+call pLog("SOLN1 PROGRAM v1101")
+t_Settings(3,2) = "N1"
+t_Settings(4,2) = "Growth and employment targets"
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)
-t_Settings(3,2) = "N1"
-t_Settings(4,2) = "Struggling on"
+
 call pCreateScenario(%gm, %alias)
 
 '==================================================================
-' SCENARIO DEFINITIONS
+' RULE DEFINITIONS
 '==================================================================
 
 smpl %actual+1 %end
-
-'--- US net revenue target
-call Target("YGD_US","YG_US/VV_US", ".17", 1, 10)
-'--- US debt ceiling
-call Ceiling("G_US","LG_US/VV_US(-1)","0.7",0.1,10)
-call Link("IAGO_US","G_US", 1)
-'--- US devaluation
-call Target("rxu_US", "@pc(rx_US)", "-2", 100, 100)
-'--- US energy saving
-ED_US_ins = -0.005
-
-'--- CN growth adjustment
-call Target("SP_CN", "@pc(V_CN)", "8 7.5 7 7 7 7 6.5 6.5 6.5 6.5 *6", -500, 20)
-call Link("IP_CN","SP_CN",-1)
-'--- CN budget balance
-call Ceiling("G_CN", "NLG_CN/VV_CN", "0", -0.1, 15)
-'--- CN c/a balance
-call Target("rxu_CN", "CA$_CN/Y$_CN", "0", -0.1, 20)
-'--- CN energy saving
-call Target("ED_CN", "@pc(EPC_CN)", "1", 100, 30)
-call Link("EPN_CN", "ED_CN", -1)
-
-'---  OD and EU net revenue targets
-for %b OD DE ES FR IT PL UK EUE EUS EUW
-  call Target("YGD_"+%b,"YG_"+%b+"/VV_"+%b, ".20", 0.2, 10)
-next
-call Target("YGD_EUN","YG_EUN/VV_EUN", ".25", 0.2, 10)
-
-'--- OD, JA and EU debt ceilings
-call Ceiling("G_JA","LG_JA/VV_JA", "1.5", 0.1, 10)
-call Link("IAGO_JA","G_JA", 0.5)
-for %b OD DE ES FR IT PL UK EUE EUS EUW EUN
-  call Ceiling("G_"+%b, "LG_"+%b+"/VV_"+%b, "0.6", 0.1, 20)
-  call Link("IAGO_"+%b, "G_"+%b, 0.5)
+'--- participation targets
+for %b EUN DE EUW UK FR IT ES EUS PL EUE
+  call Floor("NLNVM_"+%b, "NLVM_"+%b+"/(NVM_"+%b _
+    +"+0.2*NOM_"+%b+")","0.64",1,10)
+  call Floor("NLNVF_"+%b, "NLVF_"+%b+"/(NVF_"+%b _
+    +"+0.2*NOF_"+%b+")","0.50",1,10)
+  call Floor("NLNYM_"+%b, _
+    "NLYM_"+%b+"/NYM_"+%b,"0.55",1,10)
+  call Floor("NLNYF_"+%b, _
+    "NLYF_"+%b+"/NYF_"+%b,"0.55",1,10)
 next
 
-'--- negative investment impact of European crisis
-IP_EUW_ins = 0
-IP_EUW_ins.fill(s) -0.04, -0.03, -0.02, -0.01 
-for %b DE ES FR IT PL UK EUE EUS EUN
-  IP_{%b}_ins = IP_EUW_ins
+'--- unemployment target: within 1% of lowest rate in 
+'    the last 20 years, but not exceeding 8%
+for %b EUN DE EUW UK FR IT ES EUS PL EUE
+  series NUL_{%b}_TAR = @min(NUL_{%b}, "1993 2012")+1
+  NUL_{%b}_TAR = @iif(NUL_{%b}_TAR > 8, 8, NUL_{%b}_TAR)
+  call Ceiling("NULVM_"+%b,"100*NU_"+%b+"/NL_"+%b, _
+    "NUL_"+%b+"_TAR",10,20)
+  call Link("NULVF_" + %b, "NULVM_" + %b, 1)
+  call Link("NULYM_" + %b, "NULVM_" + %b, 1)
+  call Link("NULYF_" + %b, "NULVM_" + %b, 1)
 next
 
-'--- relocation of industries to IN and AMS
-sxmu_AMS_ins = 0.05
-sxmu_IN_ins = 0.05
+'--- GDP growth targets 2030 productivity
+'    measured relative to labour supply
+'    German productivity grows by 1.5% pa
+'    other countries need to attain the same level
+'    maximum growth 4% pa
+!v = (1.015^16)*@elem(VV_de,"2014")/@elem(NL_de,"2014")
+for %b EUN DE EUW UK FR IT ES EUS PL EUE
+  !v1 = @elem(VV_{%b},"2014")/@elem(NL_{%b},"2014")
+  !v1 = 100*(exp(log(!v/!v1)/16)-1)
+  if !v1 > 4 then !v1 = 4 endif
+  %s = @str(!v1)
+  call Target("G_"+%b, "@pc(VV_"+%b+"/NL_"+%b+")", %s, 50, 100) 
+next
+ 
+call Limit (100, "ALL")
 
-'--- raw material exports from low income areas
-BA0U_AFS_ins = 0.003
-BA0U_AFN_ins = 0.5*BA0U_AFS_ins
-BA0U_AMS_ins = 0.5*BA0U_AFS_ins
-
-call Limit (95, "ALL")
 '==================================================================
 ' PROCESSING
 '==================================================================
