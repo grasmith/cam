@@ -18,9 +18,9 @@
 '==================================================================
 ' OPTIONS
 '==================================================================
-include "mb.prg"
-include "set"
-call solE4a
+'include "mb.prg"
+'include "set"
+'call solE4a
 '------------------------------------------------------------------
 subroutine solE4a
 
@@ -73,7 +73,7 @@ p_Bloc.genr ttco2_?_ins = ttco2_w
 call MBBuild(m_wmE4a, t_MB, nMB, "EU","0.5 1 1.5 2 2.5 3 3.5 4 4.5 5", _
   "80 20", "30 50 20 20 30")
 
-'--- c/a ceilings for EUN EUW JA EAH
+'--- c/a ceilings for EUN EUW JA EAH CN
 call Ceiling("SP_EUN","100*CA$_EUN/Y$_EUN","2",100,10)
 call Link("MM$_EUN","SP_EUN",-1)
 call Link("BS$U_EUN","SP_EUN",1)
@@ -86,6 +86,9 @@ call Link("BS$U_JA","SP_JA",1)
 call Ceiling("SP_EAH","100*CA$_EAH/Y$_EAH","2",100,10)
 call Link("MM$_EAH","SP_EAH",-0.5)
 call Link("BS$U_EAH","SP_EAH",0.5)
+call Ceiling("SP_CN","100*CA$_CN/Y$_CN","2",100,10)
+call Link("MM$_CN","SP_CN",-1)
+call Link("BS$U_CN","SP_CN",1)
  
 '--- growth targets in low income G20
 call Target("IP_IN", "@pc(H_IN)", "8", 25, 50)
@@ -104,7 +107,7 @@ call Floor("G_AFN","@pc(G_AFN)", "7", 100, 100)
 call Floor("YG_AFS","YG_AFS/VV_AFS", ".15", 1, 30)
 call Floor("G_AFS","@pc(G_AFS)", "7", 100, 100)
 call Floor("YG_ASO","YG_ASO/VV_ASO", ".15", 1, 30)
-call Floor("G_ASO","@pc(G_ASO)", "7", 100, 100)
+call Floor("G_ASO","@pc(G_ASO)", "9", 100, 100)
 
 '--- raw material exports from Africa (restore)
 BA0U_AFS_ins = 0.003

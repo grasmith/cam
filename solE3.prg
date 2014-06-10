@@ -24,8 +24,8 @@
 '==================================================================
 ' OPTIONS
 '==================================================================
-include "set"
-call solE3
+'include "set"
+'call solE3
 '------------------------------------------------------------------
 subroutine solE3
 
@@ -72,11 +72,6 @@ smpl %actual+1 %end
 
 '--- growth-orientated real exchange rates
 call DropRules("rxu_EUN rxu_EUW rxu_EUE rxu_EUS rxu_UK")
-rxu_EUN_ins = 0
-rxu_EUW_ins = 0
-rxu_EUE_ins = 0
-rxu_EUS_ins = 0
-rxu_UK_ins = 0
 call Target("rxu_EUE", "rx_EUE/rx_EUW", "0.55", 1, 10)
 call Target("rxu_EUN", "rx_EUN/rx_EUW", "1.20", 1, 10)
 call Target("rxu_EUS", "rx_EUS/rx_EUW", "0.65", 1, 10)

@@ -31,7 +31,7 @@ show sp_log
 
 pagecreate(page=E1a) a %start %end
 call pGraphE1a("E1a", "2000 2030 2012", _
-  "E1;reduced government:E1a;US-China hegemony:", %blyellow)
+  "E1;reduced government:E1a;US-China accommodation:", %blyellow)
 
 stop
 
@@ -68,7 +68,7 @@ call SPGraph(%p_Page,"EU_RX", _
   )
 
 call SPGraph(%p_Page,"EU_SHOCKS", _
-  "Europe: trade and investment with US-China hegemony ", _
+  "Europe: trade and investment with US-China accommodation ", _
   %color, %font,"",%p_tlScenario,"2007 2030 2012",3, _
   "private investment (% of GDP);0;;IPV_EU:" _
   + "total imports ($2005 billion);0;;M$_EU/1000:" _
@@ -152,6 +152,14 @@ call SPGraph(%p_Page,"USCN_RX", _
   "Real exchange rates", _
   %color, %font,"EUW US CN",%p_tlScenario,"2007 2030 2012",2, _
   ";0.4,1.8;0;rx_?:" _
+  )
+
+call SPGraph(%p_Page,"USCN_DXV", _
+  "Exports and GDP growth (% p.a.)", _
+  %color, %font,"CN JA EAH EAO US OD ACX AMS W AF OA EA AM EU", _
+  %p_tlScenario,%p_tlyear,3, _
+  "GDP;0,6;;100*(exp(log(V_?/V_?(-20))/20)-1):" _
+  + "exports;0,10;;100*(exp(log(X$_?/X$_?(-20))/20)-1):" _
   )
 
 call SPGraph(%p_Page,"W_DXV", _

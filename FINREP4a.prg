@@ -136,6 +136,19 @@ call SPGraph(%p_Page,"REG_ER", _
   ";40,80;0;NER_?:" _
   )
   
+call SPGraph(%p_Page,"EU_SUMMARY", _
+  "EU summary", _
+  %color, %font,"EU EUN EUW UK EUS EUE", _
+  %p_tlScenario,%p_tlyear,3, _
+  "GDP growth;;;100*(exp(log(V_?/V_?(-10))/10)-1):" _
+  + "Employment rate;;;NER_?:" _
+  + "Debt/GDP ratio;;;LGV_?:" _
+  + "External liabilities;;;LXV$_?:" _
+  + "Government deficit;;;-NLGV_?:" _
+  + "Government services;;;GV_?:" _
+  + "Investment;;;IPV_?" _
+  )
+  
 call SPGraph(%p_Page,"EU_LGV", _
   "government debt (% of GDP)", _
   %color, %font,"single EUS UK EUW EUN EUE", _
@@ -415,7 +428,7 @@ call SPGraph(%p_Page,"EU_RXNA", _
   "Exchange rate index - South Europe vs West Europe", _
   %color, %font,"EUS","E1;struggling on:E2;EU break-up:" _
  + "E3;multi-speed Europe:","2012 2030 2012",3, _
-  ";0.4,1.1;;tmp_?:" _
+  ";0.75,1.1;;tmp_?:" _
   )
 
 call SPGraph(%p_Page,"EU_RX", _
@@ -466,6 +479,13 @@ call SPGraph(%p_Page,"EU_LGV", _
   "E3",%p_tlyear,3, _
   ";0,;0;100*LG_?/VV_?|60:" _
   )
+  
+call SPGraph(%p_Page,"EU_LGV1", _
+  "government debt (% of GDP)", _
+  %color, %font,"single EU EUN EUW UK EUS EUE", _
+  %p_tlScenario,%p_tlyear,3, _
+  ";0,;0;100*LG_?/VV_?|60:" _
+  )
 
 call SPGraph(%p_Page,"EU_G", _
   "government spending on goods and services(% of GDP)", _
@@ -486,6 +506,21 @@ call SPGraph(%p_Page,"EU_ER", _
   %color, %font,"single EUN EUW UK EUE EUS", _
   "E3",%p_tlyear,3, _
   ";;;NER_?:" _
+  )
+
+call SPGraph(%p_Page,"EU_ER1", _
+  "employment rates (% of 15+ population)", _
+  %color, %font,"EU EUN EUW UK EUE EUS", _
+  %p_tlScenario,%p_tlyear,3, _
+  ";;;NER_?:" _
+  )
+
+call SPGraph(%p_Page,"EU_DXV", _
+  "20-year export growth and GDP growth (% p.a.)", _
+  %color, %font,"EU EUN EUW UK EUS EUE", _
+  %p_tlScenario,%p_tlyear,3, _
+  "GDP;;;100*(exp(log(V_?/V_?(-20))/20)-1):" _
+  + "exports;;;100*(exp(log(X$_?/X$_?(-20))/20)-1):" _
   )
 
 pageselect data
@@ -576,6 +611,14 @@ pageselect data
 %color = %p_color
 if @left(@upper(%p_color),1) = "B" then %color = "" endif
 
+call SPGraph(%p_Page,"EDR", _
+  "Dependency comparisons", _
+  %color, %font,"single EUN EUW UK EUS EUE EU EA AM OA AF", _
+  %p_tlScenario,%p_tlyear,3, _
+  "EDR;;;N_?/NE_?-1:" _
+  + "migrants;;;18*@mav(NIM_?,18):" _
+  )
+
 call SPGraph(%p_Page,"W_DXV", _
   "20-year export growth and GDP growth by world region (% p.a.)", _
   %color, %font,"single W AF OA EA AM EU", _
@@ -610,8 +653,8 @@ call SPGraph(%p_Page,"FED_YGXN_BLOC", _
 
 call SPGraph(%p_Page,"FED_YGXMY_BLOC", _
   "European federal budget: net receipts by country group (% GDP)", _
-  %color, %font,"EUS EUE EUW EUN","E4","2013 2030 2012",3, _
-  ";;;100*eu_ygx$_?/y$_? receipts" _
+  %color, "28","EUS EUE EUW EUN","E4","2013 2030 2012",2, _
+  ";0,12;;100*eu_ygx$_?/y$_? receipts" _
   + "|100*eu_ygm$_?/y$_? contributions:" _
   )
 
@@ -671,6 +714,13 @@ call SPGraph(%p_Page,"EU_LGV", _
   "E4",%p_tlyear,3, _
   ";0,;0;100*LG_?/VV_?|60:" _
   )
+  
+call SPGraph(%p_Page,"EU_LGV1", _
+  "government debt (% of GDP)", _
+  %color, %font,"single EU EUN EUW UK EUS EUE", _
+  %p_tlScenario,%p_tlyear,3, _
+  ";0,;0;100*LG_?/VV_?|60:" _
+  )
 
 call SPGraph(%p_Page,"EU_G", _
   "government spending on goods and services (% of GDP)", _
@@ -684,6 +734,21 @@ call SPGraph(%p_Page,"EU_ER", _
   %color, %font,"single EUN EUW EUS EUE", _
   "E4",%p_tlyear,2, _
   ";;;NER_?:" _
+  )
+  
+call SPGraph(%p_Page,"EU_SUMMARY", _
+  "EU summary", _
+  %color, %font,"EU EUN EUW UK EUS EUE", _
+  %p_tlScenario,%p_tlyear,3, _
+  "GDP growth;;;100*(exp(log(V_?/V_?(-18))/18)-1):" _
+  + "Per capita income;;;YN_?:" _
+  + "Employment rate;;;NER_?:" _
+  + "Inflation;;;pi_?:" _
+  + "Debt/GDP ratio;;;LGV_?:" _
+  + "External liabilities;;;LXV$_?:" _
+  + "Government deficit;;;-NLGV_?:" _
+  + "Government services;;;GV_?:" _
+  + "Investment;;;IPV_?" _
   )
 
 call SPGraph(%p_Page,"EU_OP", _
@@ -711,10 +776,20 @@ series tmp_UK_E4 = 100*YN_UK_E4/YN_UK_e1
   
 call SPGraph(%p_Page,"EU_YNGAIN", _
   "Income per capita (scenario E1 = 100)", _
-  %color, %font,"single EUS EUE UK EUW EUN","E4","2012 2030 2012",3, _
+  %color, %font,"single EUS EUE UK EUW EUN","E4", _
+  "2012 2030 2012",3, _
   ";;0;tmp_?:" _
   )
 
+call SPGraph(%p_Page,"W_DXV", _
+  "20-year export growth and GDP growth by world region (% p.a.)", _
+  %color, %font,"CI WA IN ASO ACX AMS AFN AFS OD JA EAH EAO W AF OA EA AM EU", _
+  "E1;reduced government:E4;towards federal Europe:", _
+  %p_tlyear,3, _
+  "GDP;;;100*(exp(log(V_?/V_?(-20))/20)-1):" _
+  + "exports;;;100*(exp(log(X$_?/X$_?(-20))/20)-1):" _
+  )
+  
 call SPGraph(%page, "W_PW", _
   "Relative price indexes (2005 = 1)", _
   %color, %font,"",%p_tlScenario,%p_tlyear,2, _
@@ -811,8 +886,8 @@ call SPGraph(%p_Page,"FED_YGXN_BLOC", _
 
 call SPGraph(%p_Page,"FED_YGXMY_BLOC", _
   "European federal budget: net receipts by country group (% GDP)", _
-  %color, %font,"EUS EUE EUW EUN","E4a","2013 2030 2012",3, _
-  ";;;100*eu_ygx$_?/y$_? receipts" _
+  %color, %font,"EUS EUE EUW EUN","E4a","2013 2030 2012",2, _
+  ";0,12;;100*eu_ygx$_?/y$_? receipts" _
   + "|100*eu_ygm$_?/y$_? contributions:" _
   )
 
@@ -828,7 +903,7 @@ call SPGraph(%p_Page,"FED_YGX", _
 
 call SPGraph(%p_Page,"EU_RX", _
   "Real exchange rates vs W Europe", _
-  %color, %font,"EUS EUE UK",%p_tlScenario,"2010 2030 2012",3, _
+  %color, "28","EUS EUE UK",%p_tlScenario,"2010 2030 2012",3, _
   ";0.55,0.95;;rx_?/rx_EUW:" _
   )
 
@@ -924,9 +999,10 @@ call SPGraph(%page, "W_PW", _
   )
 
 call SPGraph(%page,"W_CO2", _
-  "carbon emissions (billion tons p.a.)", _
+  "energy supply and emissions (billion tons p.a.)", _
   %color, %font,"",%p_tlScenario,%p_tlyear,3, _
-  ";;;CO2_W/1000:" _
+  "carbon energy use;;;EPC_W/1000:" _
+  + "CO2 emissions;;;CO2_W/1000:" _
   )
 
 call SPGraph(%p_Page,"REG_DV", _
@@ -951,15 +1027,19 @@ pageselect data
 smpl 1970 2030
 series tmp_AFS_E4a = 100*YN_AFS_E4a/YN_AFS_E4
 series tmp_ASO_E4a = 100*YN_ASO_E4a/YN_ASO_E4
-series tmp_AMS_E4a = 100*YN_AMS_E4a/YN_AMS_E4
 series tmp_AFN_E4a = 100*YN_AFN_E4a/YN_AFN_E4
-series tmp_WA_E4a = 100*YN_WA_E4a/YN_WA_E4
-series tmp_CI_E4a = 100*YN_CI_E4a/YN_CI_E4
 series tmp_IN_E4a = 100*YN_IN_E4a/YN_IN_E4
+
+call SPGraph(%p_Page,"W_YNLI", _
+  "low income regions relative to world average (%)", _
+  %color, %font,"single AFN EAO IN AFS ASO", _
+  "E4A",%p_tlyear,3, _
+  ";0,70;;100*YN_?/YN_W:" _
+  )
   
 call SPGraph(%p_Page,"W_YNLOMI", _
   "Income per capita (scenario E4 = 100)", _
-  %color, %font,"single AFS IN AFN AMS ASO WA CI","E4a","2012 2030 2012",3, _
+  %color, %font,"single AFS AFN IN ASO","E4a","2012 2030 2012",3, _
   ";;;tmp_?:" _
   )
 

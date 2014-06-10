@@ -26,12 +26,22 @@ show sp_log
 '==================================================================
 ' PROCESSING
 '==================================================================
+
+'--- load data for scenario e1a
+'open sole1a
+'workfile sole2a
+'copy sole1a::data\*_e1a
+'close sole1a
   
 '--- generate the graphs
 
-pagecreate(page=E2a) a %start %end
-call pGraphE2a("E2a", "2000 2030 2012", _
-  "E2;reduced government:E2a;US-China hegemony:", %blyellow)
+'pagecreate(page=E22a) a %start %end
+call pGraphE2a("E22a", "2000 2030 2012", _
+  "E2;EU break-up:E2a;US-China hegemony:", %blyellow)
+
+'pagecreate(page=E1a2a) a %start %end
+call pGraphE2a("E1a2a", "2000 2030 2012", _
+  "E1a;reduced government:E2a;EU break-up:", %blyellow)
 
 stop
 
@@ -43,6 +53,9 @@ subroutine pGraphE2a(string %p_Page, string %p_tlYear, _
 pageselect {%page}
 delete *
 pageselect data
+
+%t = %p_tlScenario
+call Token(%t, ";", %compare)
 
 %font = "24"
 %color = %p_color
@@ -68,7 +81,7 @@ call SPGraph(%p_Page,"EU_RX", _
   )
 
 call SPGraph(%p_Page,"EU_SHOCKS", _
-  "Europe: trade and investment with US-China hegemony ", _
+  "Europe: trade and investment ", _
   %color, %font,"",%p_tlScenario,"2007 2030 2012",3, _
   "private investment (% of GDP);0;;IPV_EU:" _
   + "total imports ($2005 billion);0;;M$_EU/1000:" _
@@ -118,22 +131,22 @@ call SPGraph(%p_Page,"EU_YN", _
   
 pageselect data
 smpl 1970 2030
-series tmp_EUW_E2a = 100*YN_EUW_E2a/YN_EUW_e2
-series tmp_EUS_E2a = 100*YN_EUS_E2a/YN_EUS_e2
-series tmp_EUE_E2a = 100*YN_EUE_E2a/YN_EUE_e2
-series tmp_EUN_E2a = 100*YN_EUN_E2a/YN_EUN_e2
-series tmp_UK_E2a = 100*YN_UK_E2a/YN_UK_e2
-  
+series tmp_EUW_E2a = 100*YN_EUW_E2a/YN_EUW_{%compare}
+series tmp_EUS_E2a = 100*YN_EUS_E2a/YN_EUS_{%compare}
+series tmp_EUE_E2a = 100*YN_EUE_E2a/YN_EUE_{%compare}
+series tmp_EUN_E2a = 100*YN_EUN_E2a/YN_EUN_{%compare}
+series tmp_UK_E2a = 100*YN_UK_E2a/YN_UK_{%compare}
+
 call SPGraph(%p_Page,"EU_YNHIT", _
-  "Income per capita (scenario E1 = 100)", _
+  "Income per capita (scenario " + @upper(%compare) + " = 100)", _
   %color, %font,"single EUS EUW UK EUE EUN","E2a","2012 2030 2012",3, _
-  ";90,110;0;tmp_?:" _
+  ";;100;tmp_?:" _
   )
 
 call SPGraph(%p_Page,"USCN_CAV$", _
   "Current accounts (% GDP)", _
   %color, %font,"EU US CN",%p_tlScenario,"2007 2030 2012",2, _
-  ";-5,10;0;CAV$_?:" _
+  ";-2,6;0;CAV$_?:" _
   )
 
 call SPGraph(%p_Page,"USCN_DV", _
@@ -154,9 +167,17 @@ call SPGraph(%p_Page,"USCN_RX", _
   ";0.4,1.8;0;rx_?:" _
   )
 
-call SPGraph(%p_Page,"W_DXV", _
+call SPGraph(%p_Page,"REG_DV", _
   "Exports and GDP growth by world region (% p.a.)", _
-  %color, %font,"W AF OA EA AM EU", _
+  %color, "36","W EU AF OA EA AM", _
+  %p_tlScenario,%p_tlyear,3, _
+  "exports;-10,20;0;@pc(X$_?):" _
+  + "GDP;-5,10;0;@pc(V_?):" _
+  )
+
+call SPGraph(%p_Page,"REG_DXV1", _
+  "20-year average growth by world region (% p.a.)", _
+  %color, %font,"W EU AF OA EA AM", _
   %p_tlScenario,%p_tlyear,3, _
   "GDP;0,6;;100*(exp(log(V_?/V_?(-20))/20)-1):" _
   + "exports;0,10;;100*(exp(log(X$_?/X$_?(-20))/20)-1):" _
@@ -171,16 +192,16 @@ call SPGraph(%p_Page,"W_PAPE", _
 
 pageselect data
 smpl 1970 2030
-series tmp_AFS_E2a = 100*YN_AFS_E2a/YN_AFS_e2
-series tmp_ASO_E2a = 100*YN_ASO_E2a/YN_ASO_e2
-series tmp_AMS_E2a = 100*YN_AMS_E2a/YN_AMS_e2
-series tmp_AFN_E2a = 100*YN_AFN_E2a/YN_AFN_e2
-series tmp_WA_E2a = 100*YN_WA_E2a/YN_WA_e2
-series tmp_CI_E2a = 100*YN_CI_E2a/YN_CI_e2
-series tmp_IN_E2a = 100*YN_IN_E2a/YN_IN_e2
+series tmp_AFS_E2a = 100*YN_AFS_E2a/YN_AFS_{%compare}
+series tmp_ASO_E2a = 100*YN_ASO_E2a/YN_ASO_{%compare}
+series tmp_AMS_E2a = 100*YN_AMS_E2a/YN_AMS_{%compare}
+series tmp_AFN_E2a = 100*YN_AFN_E2a/YN_AFN_{%compare}
+series tmp_WA_E2a = 100*YN_WA_E2a/YN_WA_{%compare}
+series tmp_CI_E2a = 100*YN_CI_E2a/YN_CI_{%compare}
+series tmp_IN_E2a = 100*YN_IN_E2a/YN_IN_{%compare}
   
 call SPGraph(%p_Page,"W_YNLOMI", _
-  "Income per capita (scenario 1 = 100)", _
+  "Income per capita (scenario " + @upper(%compare) + " = 100)", _
   %color, %font,"single AFS AFN ASO WA CI AMS IN","E2a","2012 2030 2012",3, _
   ";90,110;0;tmp_?:" _
   )

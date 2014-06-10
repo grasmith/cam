@@ -26,8 +26,7 @@
 'subroutine MBDef(table p_tDef, scalar p_nDef, string %p_group, _
 '  string %p_tlmem, %p_tlmem_sc, string %p_tlrev, string %p_tlexp)
 subroutine MBDef(table p_tDef, scalar p_nDef, string %p_group, _
-  string %p_tlmem, string %p_tlrev, string %p_tlexp, _
-  string %p_rev_wt, string %p_exp_wt)
+  string %p_tlmem, string %p_tlrev, string %p_tlexp)
 '==================================================================
 ' define a multi-bloc budget system
 '
@@ -36,10 +35,9 @@ subroutine MBDef(table p_tDef, scalar p_nDef, string %p_group, _
 '       %p_group  group identifier
 '       %p_tlmem  list of participating blocs separated by blanks
 '                 the first bloc absorbs any c/a imbalance
+'       %p_tlmem_sc optional receipt scale factor for each bloc
 '       %p_tlrev  list of revenue items separated by ;
 '       %p_tlexp  list of expenditure items separated by ;
-'       %p_rev_wt list of per-bloc weights for revenue
-'       %p_exp_wt list of per-bloc weights for expenditure
 '
 ' Ret:  p_tDef    updated definition table
 '       p_nDef    updated number of rows
@@ -81,13 +79,11 @@ p_tDef(!i, 1) = %p_group
 p_tDef(!i, 2) = %p_tlmem
 p_tDef(!i, 3) = %p_tlrev
 p_tDef(!i, 4) = %p_tlexp
-p_tDef(!i, 5) = %p_rev_wt
-p_tDef(!i, 6) = %p_exp_wt
 endsub
 
 subroutine MBBuild(model p_m, table p_tDef, scalar p_nDef, _
   string %p_group, string %p_size, _
-  string %p_tlrev, string %p_tlexp, string %p_rev_lag)
+  string %p_tlrev, string %p_tlexp)
 '==================================================================
 ' append variables and equations for a multi-bloc budget
 ' system to a model
@@ -102,8 +98,6 @@ subroutine MBBuild(model p_m, table p_tDef, scalar p_nDef, _
 '            up to the end date
 '       %p_tlrev  shares for revenue items separated by blanks
 '       %p_tlexp  shares for expenditure items separated by blanks
-'       %p_def_scale scale factor used to introduce deficit spending
-'       %p_rev_lag lag revenues by this many years
 ' 
 ' Ret:
 '
@@ -121,7 +115,6 @@ subroutine MBBuild(model p_m, table p_tDef, scalar p_nDef, _
 '
 '---------------------------------------------------------------
 smpl %start %end
-series fb_def_scale = 1
 
 ' locate row of defition table based on group identifier
 !igroup = 0
@@ -140,29 +133,6 @@ endif
 
 ' extract list of group members
 %tlmem = p_tDef(!igroup, 2)
-' count em
-!num_mem = @wcount(%tlmem)
-
-' extract revenue weights
-%m_wt = p_tDef(!igroup, 5)
-%x_wt = p_tDef(!igroup, 6)
-
-' calculate weighting totals (long winded)
-%m_wt_tmp = %m_wt
-%x_wt_tmp = %x_wt
-
-!m_wt_tot = 0
-!x_wt_tot = 0
-
-while %m_wt_tmp <> ""
-	call Token(%m_wt_tmp, " ", %w)
-	!m_wt_tot = !m_wt_tot + @val(%w)
-wend
-
-while %x_wt_tmp <> ""
-	call Token(%x_wt_tmp, " ", %w)
-	!x_wt_tot = !x_wt_tot + @val(%w)
-wend
 
 ' create group suffix for variables
 %gp = %p_group + "_"
@@ -189,17 +159,11 @@ if %tl <> "" then                           'immediate values
   %s = @replace(%tl," ",",")
   {%pcyg}.fill(s) {%s}
 endif
-
-
-fb_def_scale.fill(s) 1.1,1.1,1.1,1.1,1.2,1.2,1.2,1.1,1.00,1.00,1.00,1.00,0.9,0.9,0.8,0.9
 smpl %start %end
 
 '--- use group GDP and % share series to calculate budget size
-%yg  = %gp + "yg$"
-%ygxd = %gp + "ygxd$"
-call zMBAppend(p_m, %yg, %pcyg + "(-"+%p_rev_lag+")*" + %y + "/100")
-call zMBAppend(p_m, %ygxd, %pcyg + "*" + %y + "/100")
-'call zMBAppend(p_m, %ygxd, %pcyg + "(-3)*" + %y + "*fb_def_scale/100")
+%yg = %gp + "yg$"
+call zMBAppend(p_m, %yg, %pcyg + "*" + %y + "/100")
 
 '--- loop for revenue and expenditure
 
@@ -228,7 +192,7 @@ for %arx m x
     call Token(%basis, ":", %s)
 
     if @instr(%basis, ":") > 0 then
-	  '--- basis has additional rate ceiling and/or standard
+	  '--- basis has additional ceiling and/or standard
       %maxrate = %basis
       call Token(%maxrate, ":", %basis)
       call Token(%maxrate, ":", %std)
@@ -263,31 +227,22 @@ for %arx m x
     '--- member bloc loop
     %tlmem = p_tDef(!igroup, 2)
     while %tlmem <> ""
-	  '--- pop member from list
       call Token(%tlmem, " ", %b)
-
+      '--- bloc basis
       call zMBAppend(p_m, @replace(%ygbaib, "?", %b), _
                    @replace(%basis, "?", %b))
-
       '--- bloc allocation equals basis multiplied by rate
       %s = %ygrai + "*" + %ygbaib ' eg. EU_ygrm1$*EU_ygbm1$
       call zMBAppend(p_m, @replace(%ygaib, "?", %b), _
                    @replace(%s, "?", %b))
     wend
-
     '--- add up to obtain total basis
     %tlmem = p_tDef(!igroup, 2)
     call BlocList(%ygbaib, "+", %tlmem, %s)
-	call zMBAppend(p_m, %ygbai, %s)
-
+    call zMBAppend(p_m, %ygbai, %s)
     '--- calculate rate required to achieve desired GDP share
-	if %arx = "x" then
-		'--- scale expenditures.
-		%s = "@nan(" + %ygxd + "*0.01*" + %share + "/" + %ygbai + ",0)"
-	else
-		%s = "@nan(" + %yg + "*0.01*" + %share + "/" + %ygbai + ",0)"		  
-	endif
-
+    %s = "@nan(" + %yg + "*0.01*" + %share + "/" + %ygbai _
+         + ",0)"
     if %maxrate <> "" then
       %s = "@iif(" + %s + ">" + %maxrate + "," _
                    + %maxrate + "," + %s + ")"
@@ -300,25 +255,10 @@ for %arx m x
   %yga = %gp + "yg" + %arx
   %tlmem = p_tDef(!igroup, 2)
   while %tlmem <> ""
-	'--- pop member from list
     call Token(%tlmem, " ", %b)
     %gb = "$_" + %b
-    '--- pop member weight from list
-    %wt = "%"+%arx+"_wt"
-    %wt_tmp = %wt
-    call Token({%wt_tmp}, " ", %w)
-    '--- set member weight to one if empty string
-    if @isna(@val(%w)) then
-      %w = "1"
-    endif
-    ' -- calculate scale factor from weights
-    %wt_tot = "!"+%arx+"_wt_tot"
-    '!scale = ({%w})/{%wt_tot})'*!num_mem
-    !scale = ({%w}*!num_mem)/{%wt_tot}
-    call pLog(%arx+" scale for "+%b+"=" + @str(!scale))
-
     call BlocList(%yga + "?" + %gb, "+", %tlitem, %s)
-    call zMBAppend(p_m, %yga + %gb, @str(!scale)+"*("+%s+")")
+    call zMBAppend(p_m, %yga + %gb, %s)
   wend
   '--- sum over bloc allocations to obtain
   '--- total budget revenue or expenditure
@@ -353,19 +293,6 @@ while %tlmem <> ""
   '--- in case of first bloc, add the surplus or deficit
   if !qfirst then
     %s = "(" + %s + "+" + %ygb + ")"
-
-	'--- construct a series which keeps track of the 
-	'--- federal net position as a cumulation of 
-	'--- budget surplus or deficits plus debt transfers
-
-	%gpdebt = %gp + "LG"
-	'call zMBAppend(p_m, %gpdebt, %gpdebt+"(-1)*rpfa_"+%b+"+LGADJ_"+%b+"-"+%ygb+"/rx_"+%b)
-	call zMBAppend(p_m, %gpdebt, %gpdebt+"(-1)*rpfa_"+%b+"+LGADJ_"+%b)
-	%gpdebt2 = %gp + "LG2"
-	call zMBAppend(p_m, %gpdebt2, %gpdebt2+"(-1)*rpfa_"+%b+"-("+%ygb+")/rx_"+%b)
-	{%gpdebt}.fill 0
-	{%gpdebt2}.fill 0
-
   endif
   call zMBAppend(p_m, %s1, %s)
 
@@ -558,38 +485,37 @@ subroutine MBTransfer(model p_m, string %p_group, _
 ' Set up transfers from national debts onto a federal budget
 	call pLog("Initialising debt transfers for "+%p_group)
 	'--- create series containing debt proportions to shift
-	%pctfr = %p_group + "_pctfr"                'series name
-	series {%pctfr} = 0                         'create series
+	%pcdebt = %p_group + "_pctfr"                'series name
+	series {%pcdebt} = 0                         'create series
 	' "pop" last element of list of GDP shares
 	%tl = %p_scale
 	call RToken(%tl, " ", %s)                   'long-term value
 	smpl %actual+1 %end
-	{%pctfr} = {%s}
+	{%pcdebt} = {%s}
 	' fill initial values if required
 	if %tl <> "" then                           'immediate values
 		%s = @replace(%tl," ",",")
-		{%pctfr}.fill(s) {%s}
+		{%pcdebt}.fill(s) {%s}
 	endif
-	call pLog("Debt percentage series name" + %pctfr)
+	call pLog("Debt percentage series name" + %pcdebt)
 	smpl %start %end
 	' pop the "daddy" of the federal bloc
 	call First(%p_bloc_list, " ", %debt_home)
 
+
 	%total_tfr = ""
 
 	for %b {%p_bloc_list}
-		%pctfrb = %p_group+"_tfr_"+%b+"_"+%debt_home
-
-		call zMBAppend(p_m, %pctfrb, _
-		  "@iif((LG_"+%b+"(-1)/V_"+%b+")>"+%p_debtpc+"," + _
-		  "(LG_"+%b+"(-1)-("+%p_debtpc+"*V_"+%b+"))*"+%pctfr+", 0)")
-
+		%pctfr = %p_group+"_tfr_"+%b+"_"+%debt_home
+		%tmp_s = "0.4*LG_"+%b+"*"+%pcdebt
+		call pLog(%tmp_s)		
+		call zMBAppend(p_m, %pctfr, "@iif(((LG_"+%b+"/V_"+%b+")-0.57)>0,((LG_"+%b+"/V_"+%b+")-0.57)*V_"+%b+"*"+%pcdebt+", 0)")
 		if %b<>%debt_home then
-			call zMBAppend(p_m, "LGADJ_"+%b, "-"+%pctfrb)
+			call zMBAppend(p_m, "LGADJ_"+%b, "-"+%pctfr)
 			if %total_tfr="" then
-				%total_tfr=%pctfrb
+				%total_tfr=%pctfr
 			else
-				%total_tfr=%total_tfr + "+" + %pctfrb
+				%total_tfr=%total_tfr + "+" + %pctfr
 			endif
 		endif
 	next

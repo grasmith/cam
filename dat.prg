@@ -16,7 +16,8 @@
 ' OPTIONS
 '==================================================================
 include "ztab"
-include "set"call dat
+include "set"
+call dat
 '------------------------------------------------------------------
 subroutine dat
 
@@ -334,6 +335,7 @@ p_Bloc.genr G_? = (ACG?+AKG?)/ph_?       'expenditure
 p_Bloc.genr YG_? = AYG?/ph_?             'net income
 p_Bloc.genr NLG_? = YG_? - G_?           'net lending
 p_Bloc.genr LG_? = FGT?/ph_?             'government debt
+p_Bloc.genr LGADJ_? = 0                  'adjustment for debt transfers
 p_Bloc.genr LGF_? = FGF?/ph_?            'government debt held by banks
 p_Bloc.genr LGO_? = LG_? - LGF_?         'other government debt
 p_Bloc.genr AGF_? = FFG?/ph_?            'bank liabilities held by govt
@@ -895,6 +897,8 @@ call LoadTable(t_Result, nResult, _
   + "MSV$_?=100*MS$_?/VV$_? " _
   + "MV$_?=100*M$_?/VV$_?" _
 )
+
+
 call LoadTable(t_Result, nResult, _
   "BGW;" _
   + "NDV_?=100*(KP_?+LG_?-AGF_?)/VV_? " _
@@ -988,15 +992,36 @@ call LoadTable(t_Result, nResult, _
 call LoadTable(t_Result, nResult, _
   "BGW;" _
   + "NCPE_?=100*NCP_?/NE_? " _
+  + "NOPE_?=0.1*NOP_? " _
+  + "NEW_?=NE_?-NOPE_? " _
   + "NCPEF_?=100*NCPF_?/NEF_? " _
   + "NCPEM_?=100*NCPM_?/NEM_? " _
   + "NCPN_?=100*NCP_?/N_? " _
+  + "NDCR_?=NCP_?/NWP_? " _
+  + "NDER1_?=(N_?-NEW_?)/NEW_? " _
+  + "NDER2_?=(N_?-NE_?)/NE_? " _
+  + "GDER_?=G_?/(NE_?*NDER2_?) " _
+  + "NDDR1_?=(NOP_?+NCP_?)/NEW_? " _
+  + "NDDR2_?=(NOP_?-NOPE_?+NCP_?)/NE_? " _
+  + "NDWR1_?=(NWP_?-NEW_?)/NEW_? " _
+  + "NDWR2_?=(NWP_?-NEW_?)/NE_? " _
+  + "NDOR_?=NOP_?/NWP_? " _
+  + "NDTR_?=(NCP_?+NOP_?)/NWP_? " _
+  + "NVDR1_?=V_?/(N_?-NEW_?) " _
+  + "NVDR2_?=V_?/(N_?-NE_?) " _
   + "NEFM_?=100*NEF_?/NEM_? " _
+  + "NOPFE_?=(NEF_?*NOPE_?)/NE_? " _
+  + "NOPME_?=(NEM_?*NOPE_?)/NE_? " _
   + "NEN_?=100*NE_?/N_? " _
   + "NER_?=100*NE_?/(NWP_?+NOP_?) " _
+  + "NERW_?=100*NEW_?/NWP_? " _
   + "NERF_?=100*NEF_?/(NWPF_?+NOPF_?) " _    
   + "NERM_?=100*NEM_?/(NWPM_?+NOPM_?) " _
-  + "NFM_?=100*NF_?/NM_? " _      
+  + "NERFW_?=(100*NEF_?-NOPFE_?)/NWPF_? " _    
+  + "NERMW_?=(100*NEM_?-NOPME_?)/NWPM_? " _
+  + "NERFO_?=(100*NOPFE_?)/NOPF_? " _    
+  + "NERMO_?=(100*NOPME_?)/NOPM_? " _
+  + "NFM_?=100*NF_?/NM_? " _
   + "NIME_?=100*NIM_?/NE_? " _
   + "NOPN_?=100*NOP_?/N_? " _
   + "NURN_?=100*NUR_?/N_? " _
@@ -1353,11 +1378,31 @@ call LoadTable(t_BRep, nBRep, _
     + "Female and male [child population as % of employment;" _
     + "GT;%;0,300:" _
   + "NCPN_?;Child population;GT;%;auto:" _
+  + "NDCR_?;Young Dependency Ratio;GT;Young persons per working-age person ;auto:" _
+  + "NDER1_?;Economic Dependency Ratio;GT;Dependent persons per working-age employed person ;auto:" _
+  + "NDDR1_?;Demographic Dependency Ratio;GT;Elderly and young persons per working-age employed person ;auto:" _
+  + "NDWR1_?;Working-Age Dependency Ratio;GT;Inactive and unemployed persons per working-age employed persons ;auto:" _
+  + "NDER2_?;Economic Dependency Ratio;GT;Dependent persons per employed person ;auto:" _
+  + "NDDR2_?;Demographic Dependency Ratio;GT;Elderly and young persons per employed person ;auto:" _
+  + "NDWR2_?;Working-Age Dependency Ratio (Alternate definition);GT;Dependent persons per employed persons ;auto:" _
+  + "NDER1_? NDER2_? ;Economic Dependency Ratio (Original and alternate definitions);GT;Dependent persons per employed;auto:" _
+  + "NDOR_?;Old-Age Dependency Ratio;GT;Old-Age persons per working-age person ;auto:" _
+  + "NDTR_?;Total Dependency Ratio;GT;Non-working-age persons per working-age person ;auto:" _
+  + "NVDR1_?;Output per Dependent;GT;Output at PPP dollars per dependent person; auto:" _
+  + "NVDR2_?;Output per Dependent;GT;Output at PPP dollars per dependent person; auto:" _
+  + "GDER_?;Government spending per Dependent;GT;PPP dollars per dependent person; auto:" _
   + "NE_?;Employment;GT;millions;:" _
-  + "NER_?;Employment rate;GT;%;auto:" _
+  + "NER_?;Employment rate as % of adult popuation;GT;%;auto:" _
+  + "NERW_?;Employment rate as % of working-age population;GT;%;auto:" _
+  + "NER_? NERW_?;Employment rate as % of adult and working-age populations;GT;%;auto:" _
   + "NEFM_?;Female employment as % of male employment;GT;%;auto:" _ 
-  + "NERM_? NERF_?;Male and female [employment" _
-    + " as % of adult population;GT;%;auto:" _  
+  + "NERM_? NERF_?;Male and female employment" _
+    + " as % of adult population;GT;%;auto:" _ 
+  + "NERMW_? NERFW_?;Male and female employment" _
+    + " as % of working-age population;GT;%;auto:" _ 
+  + "NERMO_? NERFO_?;Male and female old-age employment" _
+    + " as % of old-age population;GT;%;auto:" _ 
+  + "NEW_?;Working-age Employed;GT;millions;auto:" _
   + "NIM_?;Net migration;GT;millions;auto:" _
   + "NIME_?;Net migration as % of employment;GT;%;auto:" _
   + "NLGV_?;Government sector net lending as % of GDP;" _
@@ -1365,7 +1410,8 @@ call LoadTable(t_BRep, nBRep, _
   + "NLGV_? NLPV_?;Government and private [net lending" _
     + " as % of GDP;GT;%;-15,15:" _
   + "NLPV_?;Private sector net lending as % of GDP;G;%;-15,15:" _
-  + "NOPN_?;Old age population;GT;%;auto:" _
+  + "NOPN_?;Old age population;GT;millions;auto:" _
+  + "NOPE_?;Old age employed;GT;millions;auto:" _
   + "NWPN_?;Working age population;GT;%;auto:" _
   + "NURN_?;Urban population;GT;%;auto:" _
   + "NXV$_?;Net external assets as % of GDP;G;%;auto:" _

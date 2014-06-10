@@ -1045,7 +1045,7 @@ if not @isobject("sp_log") then
   call OpenSpool("sp_log")
   table(1,2) t_log
   t_log.setwidth(1) 20
-  t_log.setwidth(2) 60
+  t_log.setwidth(2) 100
   setcell(t_log,1,1,@strnow("YYYY-MM-DD HH:MI:SS"),"l")
   setcell(t_log,1,2,%sysTitle + " (" + %model + %alignmethod + ")","l")
   print t_log
@@ -1342,6 +1342,28 @@ else
 endif
 %r = @trim(%r)
 endsub
+
+
+subroutine local First(string %t, string %a, string %r)
+'=================================================='
+'Return the first item from a list without truncating the list
+'
+' Call: %t  source string
+'       %a  separator character for list items
+'
+' Ret:  %t  string remainder
+'       %r  token
+'
+'---------------------------------------------------------------
+!i = @instr(%t, %a)
+if !i > 0 then
+  %r = @left(%t, !i-1)
+else
+  %r = %t
+endif
+%r = @trim(%r)
+endsub
+
 
 subroutine local Unadjusted(string %Var, string %Name)
 '==================================================
