@@ -1,12 +1,12 @@
 'PROGRAM: sol0p.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM version 5.1
+' CAM Version 5.2
 '
-' Baseline projection (main version)
+' Initial baseline projection
 '
 ' Run this program after sola.prg (alignment).
-' It gives a plain projection of the model that should be examined
-' before defining the baseline in sol0.prg
+' It gives a plain projection of the model that should be
+' examined before defining the baseline in sol0.prg
 '
 ' The program reads SOLA.wf1 and creates SOL0P.wf1
 '

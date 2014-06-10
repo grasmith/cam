@@ -1,6 +1,6 @@
 'PROGRAM: est.prg          Copyright (C) 2012,2014 Alphametrics Co. Ltd.
 '
-' CAM version 5.1
+' CAM Version 5.2
 '
 ' estimation of behavioural equations
 '
@@ -10,9 +10,9 @@
 ' the program reads DAT.wf1 and writes EST.wf1
 '
 ' you can get different types of estimation output by
-' switching on the various options listed below
+' switching on options listed below
 '
-' updated: FC 11/01/2014
+' updated: FC 30/05/2014
 '
 '==================================================================
 ' OPTIONS
@@ -22,11 +22,11 @@ call est
 '------------------------------------------------------------------
 subroutine est
 
-%equation_listing = "No"
-%comparisons = "No"
-%prediction_graphs = "No"
+%equation_listing = "Yes"
+%comparisons = "Yes"
+%prediction_graphs = "Yes"
 %startest = "1980"            ' first year for eqn estimation
-%endest = "2011"              ' last year for eqn estimation
+%endest = "2012"              ' last year for eqn estimation
 
 '--- conditioning variable in models 3 and 4
 %condvar = "per capita GDP:c*log(VVN_?(-1))"
@@ -51,7 +51,7 @@ pageselect data
 delete gp_gr* sp_log*
 
 '--- update settings
-call pLog("EST PROGRAM v1101")
+call pLog("EST PROGRAM v3005")
 %wkfile = "EST"
 t_Settings(7,2) = %wkfile
 wfsave {%wkfile}
@@ -244,8 +244,8 @@ call AddEquation(%blocs, "mu Profit and rent markup;4;" _
 call Bound(%tlBound, "G LG NGI R$ rx VVTX")
 
 call AddEquation(%blocs, "rtx Indirect taxes less subsidies;-;" _
-  + "dlog(rtx_?/100) = " _
-  + "error correction:c*log(rtx_?(-1)/100);" _
+  + "dlog(1+rtx_?/100) = " _
+  + "error correction:c*log(1+rtx_?(-1)/100);" _
   + "energy exports:" _
     + "c*XE$_?(-1)/(rx_?(-1)*VV_?(-1));" _
   + "change in energy exports:" _
@@ -302,12 +302,14 @@ call AddEquation(%blocs, "IAGO other govt asset transactions;-;" _
 call Bound(%tlBound, "IP NFI:-2 pkp VT VVPR")
 
 call AddEquation(%blocs, "SP private savings;4;" _
-  + "SP_?/YP_?(-1) = " _
-  + "momentum:c*SP_?(-1)/YP_?(-1);" _
-  + "growth of private income:c*d(YP_?)/YP_?(-1);" _
-  + "capital gains:c*HWP_?/YP_?(-1);" _
-  + "wealth:-0.03*WP_?(-1)/YP_?(-1);" _
-  + "inflation:c*dlog(1+pi_?/100)")
+  + "d(SP_?/YP_?(-1)) = " _
+  + "error correction:-0.2*SP_?(-1)/YP_?(-2);" _
+  + "growth of private income:0.3*d(YP_?)/YP_?(-1);" _
+  + "wealth:-0.008*d(WP_?(-1))/WP_?(-2);" _
+  + "inflation:c*log(1+pi_?/100);" _
+  + "share of corporate income:c*VVPR_?(-1)/VV_?(-1);" _
+  + "change in share of income from employment:" _
+    + "c*d(VVEM_?/YP_?)")
 
 'Note: the imposed coefficient on the wealth term
 'enforces gradual adjustment of savings to achieve a
@@ -321,21 +323,23 @@ call AddEquation(%blocs, "pkp real asset price;-;" _
 
 'NB: coefficient on capacity utilisation imposed for stability
 
-'--- unconstrained equation
-'copy IP_* IP1_*
-'  call AddEquation(%blocs, "IP1 private investment;1;" _
-'  + "dlog(IP1_?/V_?(-1)) = " _
-'  + "error correction:c*log(IP1_?(-1)/V_?(-2));" _
-'  + "GDP growth:0.5*dlog(V_?);" _
-'  + "profit growth:c*d(VVPR_?)/V_?(-1);" _
-'  + "bond rate:-0.2*irm_?/100")
+'--- freely estimated equation
+copy IP_* IP1_*
+call AddEquation(%blocs, "IP1 private investment;;" _
+  + "dlog(IP1_?/V_?(-1)) = " _
+  + "error correction:c*log(IP1_?(-1)/V_?(-2));" _
+  + "GDP growth:c*log(V_?/V_?(-2));" _
+  + "profit share:c*VVPR_?(-1)/VV_?(-1);" _
+  + "capital ratio:c*KI_?(-1)/VV_?(-1);" _
+  + "bond rate:c*irm_?/100")
 
-'--- imposed coefficients
-  call AddEquation(%blocs, "IP private investment;2;" _
+'--- imposed equation
+call AddEquation(%blocs, "IP private investment;;" _
   + "dlog(IP_?/V_?(-1)) = " _
   + "error correction:c*log(IP_?(-1)/V_?(-2));" _
-  + "GDP growth:0.5*dlog(V_?);" _
-  + "profit growth:0.3*d(VVPR_?)/VV_?(-1);" _
+  + "GDP growth:0.25*log(V_?/V_?(-2));" _
+  + "profit share:c*VVPR_?(-1)/VV_?(-1);" _
+  + "capital ratio:-0.035*KI_?(-1)/VV_?(-1);" _
   + "bond rate:-0.2*irm_?/100")
 
 'NB: imposed GDP growth and bond rate coefficients prevent unstable feedback. The coefficient for profit growth is reduced to allow for simultaneity.
@@ -352,7 +356,7 @@ call AddEquation(%blocs, "IV inventory changes;-R;" _
 
 'NB: imposed bank lending coefficients prevent unstable feedback
 
-'--- upper bound at 3.5 x national income
+'--- upper bound at 3.5 x GDP
 call AddEquation(%blocs, "NFI covered bank lending;-;" _
   + "dlog(1/(3.5/((2+NFI_?)/VV_?(-1))-1))+4*WLNA_?/LN_?(-1) = " _
   + "error correction:c*log(1/(3.5/((2+NFI_?(-1))/VV_?(-2))-1));" _
@@ -369,28 +373,107 @@ call AddEquation(%blocs, "NFI covered bank lending;-;" _
 
 '========= MONETARY POLICY, RESERVES AND CAPITAL FLOWS
 call Bound(%tlBound, "DP im is nxi$ pvi:-10 LGO " _
-  + "rpaxo$:-0.5 rplx$:-0.5 rpr$:-1")
+  + "rpaxo$:-0.5 rplx$:-0.5 rpr$:-1 " _
+  + "ADO$ APO$ LDI$ LPI$")
     
+'NB: LGO must be the first variable on the lhs
 '--- ceiling; non-bank holdings must not exceed the total
 call AddEquation(%blocs, _
  "LGO non-bank holdings of govt debt;3;" _
   + "dlog(1/(1/(LGO_?/LG_?)-1)) = " _
   + "non-bank liquidity:c*dlog(DP_?(-1)/VV_?(-1))")
 
-'NB: LGO must be the first variable on the lhs
+'--- ceiling; direct investment assets
+call AddEquation(%blocs, _
+ "ADO$ direct investment assets;;" _
+  + "dlog(1/(1/(ADO$_?/AXO$_?)-1)) = " _
+  + "error correction:" _
+    + "c*log(1/(1/(ADO$_?(-1)/AXO$_?(-1))-1));" _
+  + "investment outflow:c*IADO$_?/AXO$_?(-1)")
 
-call AddEquation(%blocs, "is short-term interest rate;R(123);" _
+'--- direct investment outflow
+call AddEquation(%blocs, _
+ "IADO$ direct investment outflow;;" _
+  + "d(IADO$_?)/VV$_?(-1) = " _
+  + "error correction:c*IADO$_?(-1)/VV$_?(-1);" _
+  + "direct investment stock:c*ADO$_?(-1)/VV$_?(-1);" _
+  + "exports:c*X$_?(-1)/VV$_?(-1);" _
+  + "increase in exports:c*d(X$_?)/VV$_?(-1);" _
+  + "real exchange rate:c*rx_?(-1)")
+
+'  + "growth of assets:c*d(ADO$_?)/VV$_?(-1)")
+  
+'--- ceiling; direct investment liabilities
+call AddEquation(%blocs, _
+ "LDI$ direct investment liabilities;;" _
+  + "dlog(1/(1/(LDI$_?/LX$_?)-1)) = " _
+  + "error correction:" _
+    + "c*log(1/(1/(LDI$_?(-1)/LX$_?(-1))-1));" _
+  + "investment inflow:c*(ILDI$_?/LX$_?(-1))")
+
+'--- direct investment inflow
+call AddEquation(%blocs, _
+ "ILDI$ direct investment inflow;;" _
+  + "d(ILDI$_?)/VV$_?(-1) = " _
+  + "error correction:c*ILDI$_?(-1)/VV$_?(-1);" _
+  + "direct investment stock:c*LDI$_?(-1)/VV$_?(-1);" _
+  + "domestic investment:c*IP_?(-1)/VV_?(-1);" _
+  + "increase in domestic investment:c*d(IP_?/VV_?);" _
+  + "government spending:c*G_?(-1)/VV_?(-1);" _
+  + "increase in government spending:c*d(G_?/VV_?)")
+  
+'--- ceiling; portfolio assets
+call AddEquation(%blocs, _
+ "APO$ portfolio assets;;" _
+  + "dlog(1/(1/(APO$_?/(AXO$_?-ADO$_?))-1)) = " _
+  + "error correction:c*log(1/(1/(APO$_?(-1)" _
+    + "/(AXO$_?(-1)-ADO$_?(-1)))-1));" _
+  + "momentum:c*dlog(1/(1/(APO$_?(-1)" _
+    + "/(AXO$_?(-1)-ADO$_?(-1)))-1));" _
+  + "energy balance:c*BE$_?(-1)/VV$_?(-1)")
+
+'--- portfolio outflow
+call AddEquation(%blocs, _
+ "IAPO$ portfolio outflow;;" _
+  + "d(IAPO$_?)/VV$_?(-1) = " _
+  + "error correction:c*IAPO$_?(-1)/VV$_?(-1);" _
+  + "growth of assets:c*d(APO$_?)/VV$_?(-1)")
+  
+'  + "direct investment stock:c*ADO$_?(-1)/VV$_?(-1);" _
+'  + "real exchange rate:c*rx_?(-1)")
+
+'--- ceiling; portfolio liabilities
+call AddEquation(%blocs, _
+ "LPI$ portfolio liabilities;3;" _
+  + "dlog(1/(1/(LPI$_?/(LX$_?-LDI$_?))-1)) = " _
+  + "error correction:c*log(1/(1/(LPI$_?(-1)" _
+    + "/(LX$_?(-1)-LDI$_?(-1)))-1));" _
+  + "momentum:c*dlog(1/(1/(LPI$_?(-1)" _
+    + "/(LX$_?(-1)-LDI$_?(-1)))-1));" _
+  + "bond yield:c*(im_?(-1)-is_?(-1))/100;" _
+  + "change in bond yield:c*d(im_?-is_?)/100")
+
+'--- portfolio inflow
+call AddEquation(%blocs, _
+ "ILPI$ portfolio inflow;;" _
+  + "d(ILPI$_?)/VV$_?(-1) = " _
+  + "error correction:c*ILPI$_?(-1)/VV$_?(-1);" _
+  + "growth of liabilities:c*d(LPI$_?)/VV$_?(-1)")
+  
+call AddEquation(%blocs, _
+  "is short-term interest rate;R(123);" _
   + "dlog(is_?/100) = " _
   + "error correction:c*log(is_?(-1)/100);" _
   + "inflation:c*log(0.3+pvi_?(-1)/100);" _
   + "rate of change in inflation:c*dlog(0.3+pvi_?/100);" _
   + "capacity utilisation:c*log(V_?/VT_?)")
 
-'Note: a margin of 40% is allowed to ensure that numerical
-'simulation for inflation and interest rates does not generate
-'invalid values. So long as the same margin is used, the 
-'impact of explanatory variables on dependent variables does
-'not change much as inflation and interest rates rise or fall.
+'Note: a margin of 30% is allowed to ensure that numerical
+'simulation for inflation and interest rates does not
+'generate invalid values. So long as the same margin is
+'used, the impact of explanatory variables on dependent
+'variables does not change much as inflation and
+'interest rates rise or fall.
 
 call AddEquation(%blocs, "im bond rate;3;" _
   + "log(im_?/100) = " _
@@ -399,7 +482,7 @@ call AddEquation(%blocs, "im bond rate;3;" _
   + "inflation:c*log(0.3+pvi_?(-1)/100);" _
   + "rate of change in inflation:c*dlog(0.3+pvi_?/100)")
 
-'Note: see note to equation for is
+'See note to equation for is
 
 '--- upper bound equal to 150% of GDP
 call AddEquation(%blocs, "R$ exchange reserves;-;" _
@@ -554,7 +637,7 @@ call AddEquation(%blocs, "MM$ imports of manufactures;-;" _
   + "weighted demand:c*log(MMH_?(-1));" _
   + "real exchange rate:c*log(rx_?(-1));" _
   + "supplier prices:c*log(pmm0_?(-1));" _
-  + "growth of weighted demand:c*dlog(MMH_?);" _
+  + "growth of weighted demand:1*dlog(MMH_?);" _
   + "change in real exchange rate:c*dlog(rx_?);" _
   + "change in supplier prices:c*dlog(pmm0_?);" _
   + "trend:c*@trend()")
@@ -688,7 +771,7 @@ call AddEquation(%blocs, "CO2 CO2 emissions;4;" _
   + "error correction:c*log(CO2_?(-1)/(ED_?(-1)-EPN_?(-1)))")
 
 '========= WELL-BEING INDICATORS
-call AddEquation(%blocs, "JHD human development index;1;" _
+call AddEquation(%blocs, "JHD human development index;(1);" _
   + "dlog(JHD_?) = " _
   + "error correction:c*log(JHD_?(-1));" _
   + "momentum:c*dlog(JHD_?(-1));" _
@@ -775,6 +858,9 @@ for !i = 1 to nEq
   '--- default specification is type 2
   if %spec = "-" or %spec = "" then %spec = "2" endif
   %tlspec = t_Eq(!i,5)
+  if %tlspec <> "" and @instr(%tlspec, %spec) = 0 then
+    %spec = @left(%tlspec,1)
+  endif
   %eqb = t_Eq(!i,6)
   '--- create the pool for the equation
   pool p_{%var} {%list}

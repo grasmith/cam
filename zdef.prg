@@ -1,6 +1,6 @@
 'PROGRAM: zdef.prg          Copyright (C) 2012,2014 Alphametrics Co. Ltd.
 '
-' CAM version 5.1
+' CAM Version 5.2
 '
 ' program segment to build the core model
 '
@@ -8,7 +8,7 @@
 ' sub-models, supplies the sub-model identities and combines
 ' them into the core model m_wm
 '
-' updated: FC 11/01/2014
+' updated: FC 30/05/2014
 '
 ' NB: aligned behavioural variables assigned to the inner sub-model
 ' are listed at the top of the routine below. Identities are assigned
@@ -93,40 +93,48 @@ series NIMUA_W = {%s}
 
 call AppendIdent( _
   "W;o;" _
-  + "N_? NV_? NP_? NOP_? NWP_? NIMU_? " _
+  + "JLA_? N_? NV_? NP_? NOP_? NWP_? NIMU_? " _
   + "NIMUA_?=" + %s + " " _
 + ":G;o;" _
-  + "N_? NV_? NP_? NOP_? NWP_? " _
+  + "JLA_? N_? NV_? NP_? NOP_? NWP_? " _
 + ":B;o;" _
+  + "JLA_?=JLA_?(-1) " _
   + "NIM_?=NIMU_?+NIMU_W*(NIMU_?-@abs(NIMU_?))" _
     + "/(NIMUA_W-NIMU_W) " _
   + "NVF_?=NVF_?(-1)+DNNVF_?+NIM_?/4 " _
   + "NVM_?=NVM_?(-1)+DNNVM_?+NIM_?/4 " _
+  + "NV_?=NVM_?+NVF_? " _
   + "NYF_?=NYF_?(-1)+DNNYF_?+NIM_?/4 " _
   + "NYM_?=NYM_?(-1)+DNNYM_?+NIM_?/4 " _
+  + "NY_?=NYM_?+NYF_? " _
+  + "NOP_?=NOF_?+NOM_? " _
   + "NPF_?=NYF_?+NVF_? " _
   + "NPM_?=NYM_?+NVM_? " _
-  + "NV_?=NVF_?+NVM_? " _
   + "NP_?=NPF_?+NPM_? " _
-  + "NOP_?=NOF_?+NOM_? " _
   + "N_?=NCP_?+NP_? " _
   + "NWP_?=N_?-NCP_?-NOP_? " _
   + "NLYF_?=NLNYF_?*NYF_?/100 " _
   + "NLYM_?=NLNYM_?*NYM_?/100 " _
+  + "NLY_?=NLYF_?+NLYM_? " _
   + "NLVF_?=NLNVF_?*NVF_?/100 " _
   + "NLVM_?=NLNVM_?*NVM_?/100 " _
+  + "NLV_?=NLVF_?+NLVM_? " _
   + "NLF_?=NLYF_?+NLVF_? " _
   + "NLM_?=NLYM_?+NLVM_? " _
   + "NUYF_?=NULYF_?*NLYF_?/100 " _
   + "NUYM_?=NULYM_?*NLYM_?/100 " _
+  + "NUY_?=NUYF_?+NUYM_? " _
   + "NUVF_?=NULVF_?*NLVF_?/100 " _
   + "NUVM_?=NULVM_?*NLVM_?/100 " _
+  + "NUV_?=NUVF_?+NUVM_? " _
   + "NUF_?=NUYF_?+NUVF_? " _
   + "NUM_?=NUYM_?+NUVM_? " _
   + "NEVF_?=NLVF_?-NUVF_? " _
   + "NEVM_?=NLVM_?-NUVM_? " _
+  + "NEV_?=NEVF_?+NEVM_? " _
   + "NEYF_?=NLYF_?-NUYF_? " _
   + "NEYM_?=NLYM_?-NUYM_? " _
+  + "NEY_?=NEYF_?+NEYM_? " _
   + "NEF_?=NEYF_?+NEVF_? " _
   + "NEM_?=NEYM_?+NEVM_? " _
   + "NEAF_?=NEAEF_?*NEF_?/100 " _
@@ -203,7 +211,7 @@ call AppendIdent( _
 
 call AppendIdent( _
   "W;i;" _
-  + "Y_? V_? VV_? VV$_? " _
+  + "Y_? V_? VV$_? VV_? VVN_?=VV_?/N_? " _
 + ":G;i;" _
   + "VV_? VVN_?=VV_?/N_? " _
 + ":B;i;" _
@@ -213,6 +221,7 @@ call AppendIdent( _
   + "V0_?=V_?*pp0_? " _
   + "VV$_?=H_?*rx_?+TB$_? " _
   + "VV_?=H_?+TB$_?/rx_? " _
+  + "VVN_?=VV_?/N_? " _
   + "YN$_?=Y$_?/N_? " _
   + "VVS_?=VV_?-VVA_?-VVE_?-VVI_? " _
   + "VVTX_?=rtx_?*VV_?/(100+rtx_?) " _
@@ -221,7 +230,6 @@ call AppendIdent( _
   + "VT_?=1.05*@movav(V_?,6)*exp(0.3*(log(V_?/V_?(-6)))) " _
 + ":BW;i;" _
   + "YN_?=Y_?/N_? " _
-  + "VVN_?=VV_?/N_? " _
   + "YR_?=YN_?/YN_W " _
 )
 
@@ -296,15 +304,19 @@ call AppendIdent( _
 + ":B;o;" _
   + "AXO$U_?=NXI$_?+@iif(NXF$U_?>0,NXF$U_?,0) " _
   + "AXO$_?=AXO$U_?*AXO$_W/AXO$U_W " _
+  + "AOO$_?=AXO$_?-ADO$_?-APO$_? " _
   + "LX$_?=AXO$U_?-NXF$U_? " _
+  + "LOI$_?=LX$_?-LDI$_?-LPI$_? " _
   + "NX$_?=R$_?+NXF$_? " _
   + "NXF$_?=AXO$_?-LX$_? " _
   + "NXF$U_?=CA$_?-IR$_?+AXO$_?(-1)*rpaxo$u_?-LX$_?(-1)*rplx$_? " _
   + "NXN$_?=@iif(R$_?+AXO$_?<LX$_?,R$_?+AXO$_?,LX$_?) " _
   + "IR$_?=R$_?-R$_?(-1)*rpr$_? " _
   + "IAXO$_?=ILX$_?-IR$_?+CA$_? " _
+  + "IAOO$_?=IAXO$_?-IADO$_?-IAPO$_? " _
   + "rpaxo$_?=(AXO$_?-IAXO$_?)/AXO$_?(-1) " _
   + "ILX$_?=LX$_?-LX$_?(-1)*rplx$_? " _
+  + "ILOI$_?=ILX$_?-ILDI$_?-ILPI$_? " _
   + "DP_?=NFI_?+@iif(NFF_?>0,NFF_?,0) " _
   + "LN_?=DP_?-NFF_? " _
   + "NFF_?=R$_?/rx_?+LGF_?-AGF_? " _
@@ -424,10 +436,12 @@ call AppendIdent( _
 + ":GW;o;" _
   + "CO2_? " _
 + ":B;o;" _
+  + "EPNX_?=@nan(EPNX_?(-1)*EX_?/EX_?(-1),0) " _
+  + "EPNN_?=EPN_?-EPNX_? " _
   + "pep_?=400*pe_w/rx_? " _
-  + "ped_?=800*rx_?*EPN_?/ED_?" _
-    + "+pep_?*(1-EPN_?/ED_?)+ttco2_?*CO2_?/ED_? " _
-  + "pepc_?=pep_?+ttco2_?*CO2_?/(ED_?-EPN_?) " _
+  + "ped_?=800*rx_?*EPNN_?/ED_?" _
+    + "+pep_?*(1-EPNN_?/ED_?)+ttco2_?*CO2_?/ED_? " _
+  + "pepc_?=pep_?+ttco2_?*CO2_?/(ED_?-EPNN_?) " _
   + "lpep_?=0.15*log(pep_?*rx_?/(pepmax-400*pe_w))" _
     + "+0.85*lpep_?(-1) " _
   + "lped_?=0.3*log(ped_?*rx_?/(pepmax-400*pe_w))" _
@@ -447,6 +461,7 @@ call AppendIdent( _
 
 '========= additional model variables (outer model)
 %t = ""
+
 for !i = 1 to nModelX
   %t = %t + t_ModelX(!i, 1) + ";o;" + t_ModelX(!i, 2) + ":"
 next

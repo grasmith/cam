@@ -1,6 +1,6 @@
 'PROGRAM: sola.prg       Copyright (C) 2012,2014 Alphametrics Co. Ltd.
 '
-' CAM version 5.1  EUR variant
+' CAM Version 5.2  EUR variant
 '
 ' Align the model to match values loaded from ALIGN.XLS
 '
@@ -21,7 +21,7 @@
 '
 ' Results are recorded as actuals
 '
-' updated: FC 11/01/2014
+' updated: FC 30/05/2014
 '
 '==================================================================
 ' OPTIONS
@@ -37,8 +37,8 @@ subroutine sola
 '--- decay rate for add factors beyond the alignment horizon
 !vdecay = 0.6
 
-%graphs = "No"
-%markets = "No"
+%graphs = "Yes"
+%markets = "Yes"
 %tables = "No"
 %analysis = "No"
 %csv = "No"
@@ -51,7 +51,7 @@ mode quiet
 call CreateModelFile("EST", %wkfile) 
 
 '--- update settings
-call pLog("SOLA PROGRAM v1101")
+call pLog("SOLA PROGRAM v3005")
 t_Settings(3,2) = ""
 t_Settings(4,2) = "actuals"
 
@@ -89,22 +89,21 @@ m_wmo.addassign @stochastic
 smpl %latest+1 %align
 
 '--- reduced trend growth of carbon energy supply in Europe and China
-EPC_PL_ins = -0.01
-EPC_EUW_ins = -0.01
+EPC_EUC_ins = -0.01
+EPC_EUP_ins = -0.01
 EPC_UK_ins = -0.01
-EPC_EUN_ins = -0.01
+EPC_ENE_ins = -0.01
 EPC_CN_ins = -0.02
 
 '--- nuclear energy supply
-'    reduced trends in US, CA, CN, CIS and FR
+'    reduced trends in main countries
 EPN_US_ins = -0.02
-EPN_OD_ins = -0.03
+EPN_CAN_ins = -0.03
 EPN_CN_ins = -0.02
-EPN_CI_ins = -0.03
+EPN_CIS_ins = -0.03
 EPN_FR_ins = -0.02
-'    Japan: 2012 closedown and gradual, partial restart
-EPN_JA_ins = 0
-EPN_JA_ins.fill(s) -2.3
+'    Japan: gradual restart
+EPN_JA_ins = -0.1
 
 smpl %latest+1 %end
 
@@ -122,8 +121,8 @@ read(t=xls,s=WEO bloc data,t,n4) align.xls !n
 delete ser*
 '--- EMPL bloc data
 smpl 2008 %align
-!n = 14*nBloc
-read(t=xls,s=EMPL bloc data,t,l4) align.xls !n
+!n = 21*nBloc
+read(t=xls,s=EMPL bloc data,t,m4) align.xls !n
 delete ser*
 
 '--- create alignment targets

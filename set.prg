@@ -1,13 +1,13 @@
-'PROGRAM: set.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: set.prg          Copyright (C) 2014 Alphametrics Co. Ltd.
 '
-' CAM version 5.1 EUR variant
+' CAM Version 5.2 EUR variant
 '
 ' settings
 '
 ' this program fragment is included in all executable programs
 ' it initialises the system and provides common settings
 '
-' updated: FC 10/05/2013
+' updated: FC 05/06/2013
 '
 '=======================================================
 
@@ -23,10 +23,10 @@ include "zrep"
 include "zimpact"
 
 '--- title for reports
-%sysTitle = "CAM 5.0 with EUR blocs"
+%sysTitle = "CAM 5.2 with ASIA blocs"
 
 '--- data source (historical series)
-!nSeries = 3066
+!nSeries = 3008
 
 '--- default simulation horizon
 %predict = "2030"
@@ -38,55 +38,55 @@ include "zimpact"
 '--- historical data and alignment periods
 %start = "1970"               ' first year of historical data
 %base = "2005"                ' base year
-%latest = "2011"              ' latest historical data
-%align = "2012"               ' default alignment horizon
+%latest = "2012"              ' latest historical data
+%align = "2014"               ' default alignment horizon
 %end    = "2030"              ' end of workfile
 
 '--- columns in history and alignment tables
-%yrdat = "1980 1990 2000 2005 2008 2009 2010 2011"
-%yrext = "1990 2000 2007 2008 2009 2010 2011 2012"
+%yrdat = "1980 1990 2000 2008 2009 2010 2011 2012"
+%yrext = "1990 2000 2008 2009 2010 2011 2012 2014"
 
 '--- graph coverage
 '    B blocs, F first blocs, O other blocs,
 '    G groups, W world
-%repgeo = "BG"
+%repgeo = "FO"
 %subgraphs = "No"
 
 '--- blocs
-!nFirstBlocs = 10
-%blocs = _
-       + "eun;Nordic countries:" _
-       + "de;Germany:" _
-       + "euw;Other West Europe:" _
-       + "uk;UK:" _
-       + "fr;France:" _
-       + "it;Italy:" _
-       + "es;Spain:" _
-       + "eus;Other South Europe:" _
-       + "pl;Poland:" _
-       + "eue;Other East Europe:" _
-       + "us;USA:" _
-       + "od;Other Developed:" _
-       + "ja;Japan:" _
-       + "eah;East Asia High Income:" _
-       + "tr;Turkey:" _
-       + "ci;CIS:" _
-       + "wa;West Asia:" _
-       + "afn;North Africa:" _
-       + "afs;Other Africa:" _
-       + "acx;Central America:" _
-       + "ams;South America:" _
-       + "cn;China:" _
-       + "eao;Other East Asia:" _
-       + "in;India:" _
-       + "aso;Other South Asia"
+!nFirstBlocs = 6
+%blocs = "" _
+  + "euc;Core eurozone:" _
+  + "fr;France:" _
+  + "eup;Eurozone periphery:" _
+  + "enc;North Europe non-euro:" _
+  + "uk;United Kingdom:" _
+  + "ene;East Europe non-euro:" _
+  + "tr;Turkey:" _
+  + "cis;CIS and other:" _
+  + "nwa;North Africa and West Asia:" _
+  + "afl;Africa Low Income:" _
+  + "za;South Africa:" _
+  + "in;India:" _
+  + "osa;Other South Asia:" _
+  + "cn;China:" _
+  + "ja;Japan:" _
+  + "oeh;Other East Asia High Income:" _
+  + "oea;Other East Asia:" _
+  + "can;Canada,Australia,New Zealand:" _
+  + "us;USA:" _
+  + "acx;Central America and Caribbean:" _
+  + "br;Brazil:" _
+  + "oam;Other South America:" _
+  + ""
 
 '--- bloc aggregates
-%groups = "eu;Europe;uk de fr it es pl eun euw eus eue:" _
-        + "nam;North America;us od:" _
-        + "lam;Latin America;acx ams:" _
-        + "af;Africa;afn afs:" _
-        + "oa;South and West Asia;ci tr wa in aso:" _
-        + "ea;East Asia;ja cn eah eao:"
-
+%groups = "" _
+ + "EU;Europe;euc fr eup enc uk ene:" _
+ + "CMEA;CIS, Middle East and Africa;" _
+    + "cis tr nwa afl za:" _
+ + "ROA;Rest of Asia;" _
+    + "ja cn oeh oea in osa:" _
+ + "RAM;America;" _
+    + "can us acx br oam:" _
+ + ""
 '=======================================================

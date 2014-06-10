@@ -1,6 +1,6 @@
 'PROGRAM: zrep.prg     Copyright (C) 2012,2014 Alphametrics Co. Ltd.
 '
-' CAM Version 5.1
+' CAM Version 5.2
 '
 ' subroutine to create standard outputs
 '

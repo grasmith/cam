@@ -1,6 +1,6 @@
 'PROGRAM: report.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
-' CAM Version 5.1
+' CAM Version 5.2
 '
 ' program to create reports
 '
@@ -23,7 +23,7 @@ include "ztab"
 '------------------------------------------------------------------
 
 '--- coverage of graphs
-%repgeo = "FOG"              'blocs and bloc groups
+%repgeo = "FO"              'blocs and bloc groups
 
 '--- range of years
 %repstart = "1980"
@@ -40,7 +40,7 @@ include "ztab"
 '--- output options
 %graphs = "Yes"
 '--- comparison graphs (if not Y, graph main data only)
-%graphcomp = "Yes"
+%graphcomp = "No"
 %markets = "Yes"
 %tables = "No"
 %analysis = "No"
