@@ -1,14 +1,14 @@
-'PROGRAM: solE2a.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: solE1a.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
 '
 ' CAM version 4.6
 '
-' EU break-up with US-China hegemony from 2014
+' Struggling on with US-China hegemony
 '
-' The program reads SOLE2.wf1 and creates SOLE2a.wf1
+' The program reads SOLE1.wf1 and creates SOLE1a.wf1
 '
 ' updated: FC 20/09/2012
 '
-' differences from SOLE2
+' differences from SOLE1
 '   China: growth slowdown, c/a balance, energy saving
 '   US: devaluation, looser budget targets, energy saving
 '   cancel additional relocation of industry to AMS and IN
@@ -17,9 +17,9 @@
 ' OPTIONS
 '==================================================================
 include "set"
-call solE2a
+call solE1a
 '------------------------------------------------------------------
-subroutine solE2a
+subroutine solE1a
 
 %actual = "2013"
 
@@ -34,21 +34,21 @@ subroutine solE2a
 ' PREFACE
 '==================================================================
 mode quiet
-'--- open the SOLE2 workfile
-open SOLE2
+'--- open the SOLE1 workfile
+open SOLE1
 pageselect graphs
 delete *
 pageselect tables
 delete *
 pageselect data
-delete sp_log* m_wmE2
+delete sp_log* m_wmE1
 '--- update settings
-call pLog("SOLE2a PROGRAM v0920")
-%wkfile = "SOLE2a"
+call pLog("SOLE1a PROGRAM v0920")
+%wkfile = "SOLE1a"
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)
-t_Settings(3,2) = "E2a"
-t_Settings(4,2) = "EU break-up with US-China hegemony"
+t_Settings(3,2) = "E1a"
+t_Settings(4,2) = "Struggling on with US-China hegemony"
 t_Settings(7,2) = %wkfile
 %first = @str(@val(t_Settings(1,2))+1)
 call CopyAliasValues("_" + t_Settings(5,2), "", %first, %actual)

@@ -2,22 +2,18 @@
 '
 ' CAM version 4.6
 '
-' EU breakup with US-China reaction from 2014
+' Reduced government with EU breakup from 2014
 '
-' The program reads SOLE2A.wf1 and creates SOLE2.wf1
+' The program reads SOLE1.wf1 and creates SOLE2.wf1
 '
-' updated: FC 25/06/2012
+' updated: FC 20/09/2012
 '
-' differences from SOLE1 (same as SOLE2A)
+' differences from solE1
 '   EU breakup: all EU currencies fall
 '   tighter debt ceilings
 '   relax constraints on government income
 '   investment and trade collapse in Europe
 '   investment impact in US
-' differences from SOLE2A
-'   China: growth slowdown, c/a balance, energy saving
-'   US: devaluation, looser budget targets, energy saving
-'   cancel additional relocation of industry to AMS and IN
 '
 '==================================================================
 ' OPTIONS
@@ -36,65 +32,92 @@ subroutine solE2
 %analysis = "No"
 %csv = "No"
 
-'==================================================================
+'================================================================
 ' PREFACE
 '==================================================================
 mode quiet
-'--- open the SOLE2A workfile
-open SOLE2A
+'--- open the SOLE1 workfile
+open SOLE1
 pageselect graphs
 delete *
 pageselect tables
 delete *
 pageselect data
-delete sp_log* m_wme2a
+delete sp_log* m_wme1
 '--- update settings
-call pLog("SOLE2 PROGRAM v0625")
+call pLog("SOLE2 PROGRAM v0920")
 %wkfile = "SOLE2"
+t_Settings(5,2) = t_Settings(3,2)
+t_Settings(6,2) = t_Settings(4,2)
 t_Settings(3,2) = "E2"
-t_Settings(4,2) = "EU break up with US-China reaction"
+t_Settings(4,2) = "EU breakup"
 t_Settings(7,2) = %wkfile
 %first = @str(@val(t_Settings(1,2))+1)
 call CopyAliasValues("_" + t_Settings(5,2), "", %first, %actual)
 t_Settings(1,2) = %actual
+
 call pCreateScenario(%gm, %alias)
 
 '==================================================================
 ' RULE DEFINITIONS
 '==================================================================
+
+'--- scenario assumptions
 smpl %actual+1 %end
 
-'--- CN growth slowdown
-call Target("SP_CN", "@pc(V_CN)", "8 7.5 7 7 7 7 6.5 6.5 6.5 6.5 *6", -500, 20)
-call Link("IP_CN","SP_CN",-1)
-'--- CN c/a balance
-call DropRules("rxu_CN")
-call Target("rxu_CN", "CA$_CN/Y$_CN", "0", -0.1, 20)
-'--- CN energy saving
-call Target("ED_CN", "@pc(EPC_CN)", "1", 100, 30)
-call Link("EPN_CN", "ED_CN", -1)
+'--- EUR breakup
+call DropRules("rxu_EUS rxu_EUE pvi_EUE")
+'--- all EU currencies fall
+rxu_EUW_ins = 0
+rxu_EUW_ins.fill(s) -0.10,-0.04
+rxu_EUN_ins = 0.3*rxu_EUW_ins
+rxu_EUS_ins = 1.5*rxu_EUW_ins
+rxu_UK_ins = rxu_EUW_ins
+'--- EUE keeps cost alignment with EUW
+call Target("rxu_EUE", "@pc(rx_EUE/rx_EUW)", "0", 100, 30)
 
-'--- US devaluation
-call Target("rxu_US", "@pc(rx_US)", "-2", 100, 100)
-'--- US debt and revenue targets relaxed a bit
-call DropRules("G_US IAGO_US YG_US")
-call Ceiling("G_US","100*LG_US/VV_US(-1)","70",100,10)
-call Link("IAGO_US","G_US", 1)
-call Target("YG_US","YG_US/VV_US", ".18", 1, 30)
-'--- US energy saving
-ED_US_ins = -0.005
+'--- Europe: tighter budget ceilings
+call DropRules("G_EUN G_EUW G_EUE G_EUS G_UK")
+call DropRules("IAGO_EUN IAGO_EUW IAGO_EUE IAGO_EUS IAGO_UK")
+call Ceiling("G_EUS", "LG_EUS/VV_EUS", "0.4", 0.1, 30)
+call Link("IAGO_EUS","G_EUS", 0.5)
+call Ceiling("G_EUE", "LG_EUE/VV_EUE", "0.4", 0.1, 30)
+call Link("IAGO_EUE","G_EUE", 0.5)
+call Ceiling("G_UK", "LG_UK/VV_UK", "0.5", 0.1, 30)
+call Link("IAGO_UK","G_UK", 0.5)
+call Ceiling("G_EUW", "LG_EUW/VV_EUW", "0.5", 0.1, 30)
+call Link("IAGO_EUW","G_EUW", 0.5)
+'--- exception: limit spending as share of GDP
+call Ceiling("G_EUN", "G_EUN/VV_EUN(-1)", "0.3", 0.5, 30)
 
-'--- relocation of industries to IN and AMS (cancel)
-sxmu_AMS_ins = 0
-sxmu_IN_ins = 0
+'--- Europe: drop limits on government income (except EUE)
+call DropRules("YG_EUN YG_EUW YG_EUS YG_UK")
+
+'--- Europe: investment and trade collapse
+IP_EUS_ins = 0
+IP_EUS_ins.fill(s) -0.4, -0.3, -0.2, -0.1, -0.05
+IV_EUS_ins = 0.02*IP_EUS_ins
+MM$_EUS_ins = 0
+MM$_EUS_ins.fill(s) -0.1, -0.05
+for %b EUN EUW UK EUE
+  IP_{%b}_ins = IP_EUS_ins
+  IV_{%b}_ins = IV_EUS_ins
+  MM$_{%b}_ins = MM$_EUS_ins
+next
+
+'--- US: impact of European collapse
+IP_US_ins = 0.2*IP_EUS_ins
+IV_US_ins = 0.2*IV_EUS_ins
+
+smpl %actual+1 %end
 
 call Limit (95, "ALL")
 '==================================================================
 ' PROCESSING
 '==================================================================
 
-call pCheckSolveReport({%gm}, %actual, %predict, "m=30000", 8)
+'--- don't set pre-solution values (excluded) from actuals
+call pCheckSolveReport({%gm}, %actual, %predict, "m=10000", 8)
 call pEnd
 
 endsub
-

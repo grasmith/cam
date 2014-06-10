@@ -43,7 +43,7 @@ pageselect data
 delete sp_log* m_wma t_Rule* nRule*
 
 '--- update settings
-call pLog("SOL0P PROGRAM v1504")
+call pLog("SOL0P PROGRAM v0415")
 %wkfile = "SOL0P"
 t_Settings(3,2) = "0p"
 t_Settings(4,2) = "plain baseline"

@@ -48,7 +48,7 @@ delete *
 pageselect data
 delete sp_log* m_wm0
 '--- update settings
-call pLog("SOLE1 PROGRAM v0305")
+call pLog("SOLE1 PROGRAM v0517")
 %wkfile = "SOLE1"
 t_Settings(1,2) = %actual
 t_Settings(5,2) = t_Settings(3,2)

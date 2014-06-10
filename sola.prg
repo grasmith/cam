@@ -58,7 +58,7 @@ pageselect data
 delete sp_log*
 
 '--- update settings
-call pLog("SOLA PROGRAM v1504")
+call pLog("SOLA PROGRAM v0415")
 %wkfile = "SOLA"
 t_Settings(3,2) = ""
 t_Settings(4,2) = "WEO alignment"

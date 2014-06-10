@@ -47,7 +47,7 @@ pageselect data
 delete sp_log* m_wm0p t_Rule* nRule*
 
 '--- update settings
-call pLog("SOL0 PROGRAM v1504")
+call pLog("SOL0 PROGRAM v0517")
 %wkfile = "SOL0"
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)

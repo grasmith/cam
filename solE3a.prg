@@ -2,29 +2,28 @@
 '
 ' CAM version 4.6
 '
-' Global regionalisation and Federal Europe
+' Multi-speed Europe with reduced government
 '
-' The program reads SOLE4.wf1 and creates SOLE3a.wf1
+' The program reads SOLE2.wf1 and creates SOLE3.wf1
 '
-' updated: FC 25/06/2012
+' updated: FC 20/09/2012
 '
-' differences from SOLE4
-'  Europe excluding UK
-'    extended eurozone with EUE as full member and EUN aligning
-'    federal budget rising to 5% of GDP
-'      revenue: carbon tax, other tax
-'      expenditure: deficit finance, social objectives
-'    investment stimulus in member states and neighbouring regions
-'  UK no investment stimulus
+' differences from SOLE2
+'
+' Europe (same as in SOLE3)
+'  crawling peg exchange rate adjustment
+'  restrictions on national budgets are removed
+'  government spending and labour market policies to create jobs
+'  investment incentives for S and E Europe
+'  investment incentives and trade preferences for neighbours
 '
 '==================================================================
 ' OPTIONS
 '==================================================================
-include "mb.prg"
 include "set"
-call sole3a
+call solE3a
 '------------------------------------------------------------------
-subroutine sole3a
+subroutine solE3a
 
 %actual = "2012"
 
@@ -39,21 +38,28 @@ subroutine sole3a
 ' PREFACE
 '==================================================================
 mode quiet
-'--- open the SOLE4 workfile
-open SOLE4
+'--- open the SOLE2 workfile
+open SOLE2
 pageselect graphs
 delete *
 pageselect tables
 delete *
 pageselect data
-delete sp_log* m_wme4
+delete sp_log* m_wme2
+
+'--- copy series from SOLE3
+open SOLE3
+wfselect SOLE2
+copy SOLE3::data\*_e3
+close SOLE3
+
 '--- update settings
-call pLog("SOLE3a PROGRAM v0625")
+call pLog("SOLE3a PROGRAM v0920")
 %wkfile = "SOLE3a"
-t_Settings(5,2) = t_Settings(3,2)
-t_Settings(6,2) = t_Settings(4,2)
-t_Settings(3,2) = "e3a"
-t_Settings(4,2) = "Regionalisation and Federal Europe"
+t_Settings(5,2) = "E3"
+t_Settings(6,2) = "Regionalisation"
+t_Settings(3,2) = "E3a"
+t_Settings(4,2) = "Reduced government"
 t_Settings(7,2) = %wkfile
 %first = @str(@val(t_Settings(1,2))+1)
 call CopyAliasValues("_" + t_Settings(5,2), "", %first, %actual)
@@ -67,49 +73,117 @@ call pCreateScenario(%gm, %alias)
 
 smpl %actual+1 %end
 
-'--- Eurozone: nominal exchange rates
-call DropRules("rxu_EUS rxu_EUE rxu_UK rxu_EUN")
-call Target("rxu_EUS", "rxna_EUS-rxna_EUW", "0", 100,100)
-call Target("rxu_EUE", "rxna_EUE-rxna_EUW", "0", 100,100)
-call Target("rxu_EUN", "rxna_EUN-rxna_EUW", "0", 100,100)
-call Limit(100, "ALL")
-'--- North and East Europe: inflation differentials
-call Target("pvi_EUE", "pvi_EUE-pvi_EUW", "0.5", 100,100)
-call Target("pvi_EUN", "pvi_EUN-pvi_EUW", "0.5", 100,100)
+'--- growth-orientated real exchange rates
+call DropRules("rxu_EUN rxu_EUW rxu_EUE rxu_EUS rxu_UK")
+rxu_EUN_ins = 0
+rxu_EUW_ins = 0
+rxu_EUE_ins = 0
+rxu_EUS_ins = 0
+rxu_UK_ins = 0
+call Target("rxu_EUE", "rx_EUE/rx_EUW", "0.55", 1, 10)
+call Target("rxu_EUN", "rx_EUN/rx_EUW", "1.20", 1, 10)
+call Target("rxu_EUS", "rx_EUS/rx_EUW", "0.65", 1, 10)
+call Target("rxu_UK", "rx_UK/rx_EUW", "0.80", 1, 10)
 
-'--- European budget
-table t_MB
-scalar nMB = 0
-call MBDef(t_MB, nMB, "EU", "EUW EUN EUS EUE", _
-  "VAT:C_?;Carbon tax:CO2_?*ttco2_?_ins::0.5", _
-  "Per capita:N_?;Dependents:NCP_?+NOP_?;" _
-  + "Service standards:G_?:0.5*(N_?+NCP_?+2*NOP_?)*YN_?/3:0.5;" _
-  + "Employment support:NE_?(-1):0.7*NWP_?(-1):40000;" _
-  + "Deficit finance:NLG_?:0:1;" _
-  )
-call MBBuild(m_wme3a, t_MB, nMB, "EU","0.5 1 1.5 2 2.5 3 3.5 4 4.5 5", _
-  "80 20", "30 50 20 20 30")
+'--- European carbon taxes
+series ttco2_EUW_ins = @iif(@trend()<43,0,25*(@trend()-43))
+for %b EUN UK EUS EUE
+  series ttco2_{%b}_ins = ttco2_EUW_ins
+next
 
-'--- investment stimulus in Europe
-IP_EUW_ins = 0.01
-IP_EUN_ins = IP_EUW_ins
-IP_EUS_ins = IP_EUW_ins + 0.01
-IP_EUE_ins = IP_EUW_ins + 0.01
-IP_UK_ins = 0
+'--- budget rules (EUE, EUS and UK)
+call DropRules("YG_EUN YG_EUW YG_EUE YG_EUS YG_UK")
+call Target("YG_EUE","YG_EUE/VV_EUE", ".25", 1, 30)
+call Target("YG_EUS","YG_EUS/VV_EUS", ".25", 1, 30)
+call Target("YG_UK","YG_UK/VV_UK", ".25", 1, 30)
+
+call DropRules("G_EUN G_EUW G_UK G_EUS G_EUE")
+call DropRules("IAGO_EUN IAGO_EUW IAGO_UK IAGO_EUS IAGO_EUE")
+
+'--- government spending and labour market policies to create jobs
+call Floor("G_EUN", "NE_EUN/(NWP_EUN+NOP_EUN)", "0.60", 0.1, 10)
+call Floor("G_EUW", "NE_EUW/(NWP_EUW+NOP_EUW)", "0.60", 0.1, 10)
+call Floor("G_UK", "NE_UK/(NWP_UK+NOP_UK)", "0.58", 0.1, 10)
+call Floor("G_EUS", "NE_EUS/(NWP_EUS+NOP_EUS)", "0.52", 0.1, 10)
+call Floor("G_EUE", "NE_EUE/(NWP_EUE+NOP_EUE)", "0.54", 0.1, 10)
+for %b EUN EUW UK EUS EUE
+  call Link("NEAM_" + %b, "G_" + %b, 2)
+  call Link("NEAF_" + %b, "G_" + %b, 2)
+next
+
+'--- Europe: investment and trade impact (financial instability)
+IP_EUS_ins = 0
+IP_EUS_ins.fill(s) -0.02, -0.05, -0.03, -0.01
+IV_EUS_ins = 0.02*IP_EUS_ins
+MM$_EUS_ins = 0
+MM$_EUS_ins.fill(s) -0.02, -0.04, -0.02
+for %b EUN EUW UK EUE
+  IP_{%b}_ins = IP_EUS_ins
+  IV_{%b}_ins = IV_EUS_ins
+  MM$_{%b}_ins = MM$_EUS_ins
+next
+
+'--- longer-term investment stimulus in S and E Europe
+IP_EUS_ins = 0.01
+IP_EUS_ins.fill(s) -0.02, -0.05, -0.03, -0.01, 0
+IP_EUE_ins = IP_EUS_ins
+
+'--- drop impact of European collapse in US
+IP_US_ins = 0
+IV_US_ins = 0
 
 '--- investment stimulus in neighbouring regions
-IP_CI_ins = IP_EUW_ins
-IP_WA_ins = IP_EUW_ins + 0.01
-IP_AFN_ins = IP_EUW_ins
+IP_CI_ins = 0.02
+IP_WA_ins = IP_CI_ins
+IP_AFN_ins = IP_CI_ins
+
+'--- trade preferences
+sxmu_EUW_CI_ins = 0.03
+sxmu_EUE_CI_ins = sxmu_EUW_CI_ins
+sxmu_EUN_CI_ins = sxmu_EUW_CI_ins
+sxmu_UK_CI_ins = sxmu_EUW_CI_ins
+sxmu_EUS_CI_ins = sxmu_EUW_CI_ins
+sxmu_CI_EUW_ins = 0.05
+sxmu_CI_EUN_ins = sxmu_CI_EUW_ins
+sxmu_CI_EUE_ins = sxmu_CI_EUW_ins
+sxmu_CI_EUS_ins = sxmu_CI_EUW_ins
+sxmu_CI_UK_ins = sxmu_CI_EUW_ins
+sxmu_CI_AFN_ins = sxmu_CI_EUW_ins
+sxmu_CI_WA_ins = sxmu_CI_EUW_ins
+sxmu_EUW_WA_ins = 0.03
+sxmu_EUE_WA_ins = sxmu_EUW_WA_ins
+sxmu_EUN_WA_ins = sxmu_EUW_WA_ins
+sxmu_UK_WA_ins = sxmu_EUW_WA_ins
+sxmu_EUS_WA_ins = sxmu_EUW_WA_ins
+sxmu_WA_EUW_ins = 0.05
+sxmu_WA_EUN_ins = sxmu_EUW_WA_ins
+sxmu_WA_EUE_ins = sxmu_EUW_WA_ins
+sxmu_WA_EUS_ins = sxmu_EUW_WA_ins
+sxmu_WA_UK_ins = sxmu_EUW_WA_ins
+sxmu_WA_CI_ins = sxmu_EUW_WA_ins
+sxmu_WA_WA_ins = sxmu_EUW_WA_ins
+sxmu_WA_AFN_ins = sxmu_EUW_WA_ins
+sxmu_EUW_AFN_ins = 0.03
+sxmu_EUE_AFN_ins = sxmu_EUW_AFN_ins
+sxmu_EUN_AFN_ins = sxmu_EUW_AFN_ins
+sxmu_UK_AFN_ins = sxmu_EUW_AFN_ins
+sxmu_EUS_AFN_ins = sxmu_EUW_AFN_ins
+sxmu_AFN_EUW_ins = 0.05
+sxmu_AFN_EUN_ins = sxmu_EUW_AFN_ins
+sxmu_AFN_EUE_ins = sxmu_EUW_AFN_ins
+sxmu_AFN_EUS_ins = sxmu_EUW_AFN_ins
+sxmu_AFN_UK_ins = sxmu_EUW_AFN_ins
+sxmu_AFN_CI_ins = sxmu_EUW_AFN_ins
+sxmu_AFN_WA_ins = sxmu_EUW_AFN_ins
+sxmu_AFN_AFN_ins = sxmu_EUW_AFN_ins
 
 call Limit (95, "ALL")
 
 '==================================================================
 ' PROCESSING
-'================e==================================================
+'==================================================================
 
 call pCheckSolveReport({%gm}, %actual, %predict, "m=30000", 8)
-call MBRep(t_MB, nMB, "EU", "e3a Federal Europe", %actual, %predict, 8)
 call pEnd
 
 endsub

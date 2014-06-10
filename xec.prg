@@ -25,11 +25,12 @@ include "sola"
 include "sol0p"
 include "sol0"
 include "solE1"
-include "solE2a"
+include "solE1a"
 include "solE2"
-include "solE4"
-include "solE3a"
+include "solE2a"
 include "solE3"
+include "solE4"
+include "solE4a"
 
 '--- execute programs
 call dat
@@ -38,8 +39,9 @@ call sola
 call sol0p
 call sol0
 call solE1
-call solE2a
+call solE1a
 call solE2
-call solE4
-call solE3a
+call solE2a
 call solE3
+call solE4
+call solE4a
