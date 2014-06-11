@@ -527,6 +527,8 @@ p_Bloc.genr AGF_? = wd_FFG?/ph_?     'bank liabilities held by govt
 p_Bloc.genr NGF_? = AGF_? - LG_?     'net identified assets
 p_Bloc.genr NGI_? = @iif(AGF_?<LG_?,AGF_?,LG_?)  'covered debt
 
+p_Bloc.genr LGADJ_? = 0              'adjustment for debt transfers
+
 '--- flow of funds
 p_Bloc.genr slgx_? = 1 - log(1+YR_?)/2   'share of fc debt
 p_Bloc.genr rplgo_? = _
