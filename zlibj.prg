@@ -15,26 +15,6 @@
 
 include "zlibp"
 
-subroutine local First(string %t, string %a, string %r)
-'=================================================='
-' Return the first item from a list without truncating the list
-'
-' Call: %t  source string
-'       %a  separator character for list items
-'
-' Ret:  %t  string remainder
-'       %r  token
-'
-'---------------------------------------------------------------
-!i = @instr(%t, %a)
-if !i > 0 then
-  %r = @left(%t, !i-1)
-else
-  %r = %t
-endif
-%r = @trim(%r)
-endsub
-
 subroutine mk_extra_graphs(string %p_scenario_list)
 '==================================================================
 ' Call: %p_scenario_list    list of scenario codes and names, e.g.
