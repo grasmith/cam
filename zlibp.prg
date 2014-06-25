@@ -4,7 +4,8 @@
 '
 ' library functions for presentations
 '
-' updated: FC 26/10/2011
+' updated: JM 27/01/2014
+' Renamed zColor to avoid clash with zlbg.prg
 '
 '   SPGraph     make a graph tableau
 '
@@ -297,6 +298,7 @@ if !nscen > 1 and (%p_yrsh = "" or %p_yrs < %p_yrsh) then
     endif
   next
   '--- make a new series list creating short series to avoid overlap
+'  call pLog("p_yrsh = " + %p_yrsh)
   smpl {%p_yrsh}
   %tl = ""
   %tlv = %tlvar
@@ -451,7 +453,7 @@ endif
 '--- standard colouring of series
 !nser = 0
 call CountTokens(%p_tlSer, " ", !nser)
-call zColor(%p_Name, %ctype, !nser)
+call zColorP(%p_Name, %ctype, !nser)
 '--- zeroline
 if @instr(%p_tlOpt, "0") > 0 then {%p_Name}.scale zeroline endif
 '--- write series to data table
@@ -576,7 +578,7 @@ delete {%p_Name}
 delete {%p_tName}
 endsub
 
-subroutine zColor(string %Name, string %Type, scalar nser)
+subroutine zColorP(string %Name, string %Type, scalar nser)
 '======================================================
 'Color a multi-graph
 '

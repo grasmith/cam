@@ -336,6 +336,7 @@ p_Bloc.genr YG_? = AYG?/ph_?             'net income
 p_Bloc.genr NLG_? = YG_? - G_?           'net lending
 p_Bloc.genr LG_? = FGT?/ph_?             'government debt
 p_Bloc.genr LGADJ_? = 0                  'adjustment for debt transfers
+p_Bloc.genr iLGADJ_? = 0                 'adjustment for interest paid on pooled debt
 p_Bloc.genr LGF_? = FGF?/ph_?            'government debt held by banks
 p_Bloc.genr LGO_? = LG_? - LGF_?         'other government debt
 p_Bloc.genr AGF_? = FFG?/ph_?            'bank liabilities held by govt
@@ -898,6 +899,13 @@ call LoadTable(t_Result, nResult, _
   + "MV$_?=100*M$_?/VV$_?" _
 )
 
+' --- Federal budget
+' call LoadTable(t_Result, nResult, _
+'   "BGW;" _
+'   + "FBLG_?=FBLG_?(-1)-LGADJ_?" _
+'   + "AX$_?=AXO$_?+R$_? " _
+'   + "AXV$_?=100*AX$_?/VV$_? " _
+' 
 
 call LoadTable(t_Result, nResult, _
   "BGW;" _

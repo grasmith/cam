@@ -8,13 +8,13 @@
 '
 
 mode quiet
-tic
+'tic
 'include "set"
 include "zlibp"
 
 ' Use as in following examples:
 'call mk_soas_graphs("e1b; Austerity scenario: e2f; Federal scenario")
-
+'call mk_soas_graphs("e2f; Federal scenario")
 
 'call mk_soas_graphs("e1; Struggling on + r. gov: e2; R. gov. + EU br. p: e3; MS Eur + regionalisation: e4a; Fed. Eur. + multi-polar")
 'call mk_soas_graphs("e1b; SOAS baseline (IAGO=0): e2d; expansion within EZ (IAGO=0)")
@@ -44,7 +44,8 @@ subroutine mk_single_graphs(string %p_tlScenario, string %p_Page)
 ' Call: %p_scenario_list    list of scenario codes and names
 '       %p_Page             name of workfile page to save graphs onto
 
-%p_tlyear = "1990 2030 2013"
+'%p_tlyear = "1990 2030 2013"
+%p_tlyear = "1980 2030 2014"
 
 %font = "28"
 %color = %blyellow
@@ -74,7 +75,14 @@ call SPGraph(%p_Page, %p_grp_code + "_investment_private", _
   "investment" _
     + "\n(% GDP)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
-  ";;0;IPV_?:" _
+  ";10,30;0;IPV_?:" _
+  )
+
+call SPGraph(%p_Page, %p_grp_code + "_investment_growth", _
+  "investment growth" _
+    + "\n(% pa)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;@dlog(IPV_?):" _
   )
 
 call SPGraph(%p_Page, %p_grp_code + "_current_acct", _
@@ -98,15 +106,33 @@ call SPGraph(%p_Page, %p_grp_code + "_govt_expenditure", _
   ";;0;GV_?:" _
   )
 
+call SPGraph(%p_Page, %p_grp_code + "_govt_exp_growth", _
+  "growth in government spending" _
+    + "\n(% pa)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;@dlog(G_?):" _
+  )
 '-- Govt finance
 
-
+series YGADJ_EUW_e1b = 0
+series YGADJ_EUN_e1b = 0
+series YGADJ_EUS_e1b = 0
+series YGADJ_EUE_e1b = 0
+series YGADJ_UK_e1b = 0
 
 call SPGraph(%p_Page, %p_grp_code + "_govt_income", _
   "government income" _
     + "\n(% GDP)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";;0;YGV_?:" _
+  )
+
+
+call SPGraph(%p_Page, %p_grp_code + "_govt_inc_fed", _
+  "government income" _
+    + "\n(% GDP)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;YGV_? | (YG_?-YGADJ_?)*100/VV_?:" _
   )
 
 call SPGraph(%p_Page, %p_grp_code + "_govt_inc_exp", _
@@ -124,12 +150,21 @@ call SPGraph(%p_Page, %p_grp_code + "_govt_deficit", _
   )
 
 
-call SPGraph(%p_Page, %p_grp_code + "_federal_debt", _
-  "European Federal debt" _
-    + "\n(% EU GDP)", _
-  %color, %font,%bloc_list,"e2f; Federal Europe",%p_tlyear,3, _
-  ";;0;@nan(100*(eu_lg+eu_lg2)/eu_y$,0):" _
+call SPGraph(%p_Page, %p_grp_code + "_govt_deficit_abs", _
+  "government net lending" _
+    + "\n(% GDP)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;NLG_?:" _
   )
+
+
+
+'call SPGraph(%p_Page, %p_grp_code + "_federal_debt", _
+'  "European Federal debt" _
+'    + "\n(% EU GDP)", _
+'  %color, %font,%bloc_list,"e2f; Federal Europe",%p_tlyear,3, _
+'  ";;0;@nan(100*(eu_lg+eu_lg2)/eu_y$,0):" _
+'  )
 
 call SPGraph(%p_Page, %p_grp_code + "_federal_deficit", _
   "European Federal deficit" _
@@ -139,15 +174,55 @@ call SPGraph(%p_Page, %p_grp_code + "_federal_deficit", _
   )
 
 
-series LGVU_EUW_e2f = LGV_EUW_e2f
-LGV_EUW_e2f = 100*(LG_EUW_e2f-eu_lg_e2f)/V_EUW_e2f
+'series LGVU_EUW_e2f = LGV_EUW_e2f
+'LGV_EUW_e2f = 100*(LG_EUW_e2f-eu_lg_e2f)/V_EUW_e2f
+
+series EU_LG_EUW_e1b = 0
+series EU_LG_EUN_e1b = 0
+series EU_LG_EUS_e1b = 0
+series EU_LG_EUE_e1b = 0
+series EU_LG_UK_e1b = 0
 
 call SPGraph(%p_Page, %p_grp_code + "_govt_debt", _
   "government debt" _
     + "\n(% GDP)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
-  ";;0;LGV_?:" _
+  ";;0;LGV_? | (LG_?-EU_LG_?)*100/V_?:" _
   )
+
+
+' Interest Graph
+'show irm_eus_e2f*lg_eus_e2f(-1)/v_eus_e2f (irm_eus_e2f*(lg_eus_e2f(-1)-eu_lg_eus_e2f(-1)) + (eu_lg_eus_e2f(-1)*2))/v_eus_e2f
+
+call SPGraph(%p_Page, %p_grp_code + "_bond_rate_r", _
+  "real bond rate" _
+    + "\n(%)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;irm_?:" _
+  )
+
+call SPGraph(%p_Page, %p_grp_code + "_bond_rate_n", _
+  "nominal bond rate" _
+    + "\n(%)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;im_?:" _
+  )
+
+series ILGADJ_EUW_e1b = 0
+series ILGADJ_EUN_e1b = 0
+series ILGADJ_EUS_e1b = 0
+series ILGADJ_EUE_e1b = 0
+series ILGADJ_UK_e1b = 0
+
+call SPGraph(%p_Page, %p_grp_code + "_interest_payments", _
+  "interest payments" _
+    + "\n(% of GDP)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;100*(LG_?(-1)*irm_?*0.01)/V_? without RF | 100*((LG_?(-1)*irm_?*0.01)-iLGADJ_?)/V_? with RF:" _
+  )
+
+
+
 
 call SPGraph(%p_Page, %p_grp_code + "_govt_iago", _
   "govt fin transactions (other)" _
@@ -180,6 +255,27 @@ call SPGraph(%p_Page, %p_grp_code + "_real_exchange_rate", _
     + "\n(% GDP)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";;0;rx_?:" _
+  )
+
+' Quickly generate RX series against USD
+series rx$_eus_e1b = rx_eus_e1b/rx_us_e1b
+series rx$_euw_e1b = rx_euw_e1b/rx_us_e1b
+series rx$_eun_e1b = rx_eun_e1b/rx_us_e1b
+series rx$_eue_e1b = rx_eue_e1b/rx_us_e1b
+series rx$_uk_e1b = rx_uk_e1b/rx_us_e1b
+
+series rx$_eus_e2f = rx_eus_e2f/rx_us_e2f
+series rx$_euw_e2f = rx_euw_e2f/rx_us_e2f
+series rx$_eun_e2f = rx_eun_e2f/rx_us_e2f
+series rx$_eue_e2f = rx_eue_e2f/rx_us_e2f
+series rx$_uk_e2f = rx_uk_e2f/rx_us_e2f
+
+
+call SPGraph(%p_Page, %p_grp_code + "_real_dollar_xr", _
+  "real exchange rate vs US" _
+    + "\n(index)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;rx$_?:" _
   )
 
 call SPGraph(%p_Page, %p_grp_code + "_bond_rate", _

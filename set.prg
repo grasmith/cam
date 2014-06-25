@@ -38,11 +38,11 @@ include "zimpact"
 !nSeries = 1859
 
 '--- bloc lists
-%blocs = "eun;Scandinavia:" _
-       + "euw;North Eurozone:" _
+%blocs = "eun;North Europe:" _
+       + "euw;West Europe:" _
        + "uk;UK:" _
-       + "eus;South Eurozone:" _
-       + "eue;Eastern Europe:" _
+       + "eus;South Europe:" _
+       + "eue;East Europe:" _
        + "us;USA:" _
        + "ja;Japan:" _
        + "od;Other Developed:" _

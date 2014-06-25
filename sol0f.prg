@@ -2,15 +2,17 @@
 '
 ' CAM version 4.6 AUGUR variant
 '
-' Baseline projection (main version)
+' This file provides a "baseline" federal simulation
+' This is essentially the same as SOL0, but with the 
+' addition of a Federal Budget. It can be used as a 
+' simple test of Federal programming without the complications
+' introduced by other simulataneous policies.
 '
-' Run this program after sola.prg (alignment).
-' It gives a plain projection of the model that should be examined
-' before defining the baseline in sol0.prg
+' Run this program after sol0.prg (basline).
 '
-' The program reads SOL.wf1 and creates SOL0F.wf1
+' The program reads SOL0.wf1 and creates SOL0F.wf1
 '
-' updated: FC 15/04/2012
+' updated: JM 25/01/2014
 '
 '==================================================================
 ' OPTIONS

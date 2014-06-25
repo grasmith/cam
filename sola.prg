@@ -32,6 +32,9 @@ call sola
 '------------------------------------------------------------------
 subroutine sola
 
+'--- alignment horizon
+%align = "2014"
+
 '--- first year of alignment data in ALIGN.XLS
 %loadfrom = "2007"
 
@@ -102,6 +105,17 @@ EPC_EUE_ins = -0.01
 EPC_UK_ins = -0.01
 EPC_EUN_ins = -0.03
 EPC_CN_ins = -0.02
+
+'--- nuclear energy supply
+'    reduced trends in US, CA, CN, CIS and FR
+EPN_US_ins = -0.02
+EPN_OD_ins = -0.03
+EPN_CN_ins = -0.02
+EPN_CI_ins = -0.03
+'EPN_FR_ins = -0.02
+'    Japan: 2012 closedown and gradual, partial restart
+EPN_JA_ins = 0
+EPN_JA_ins.fill(s) -2.3
 
 smpl %latest+1 %end
 

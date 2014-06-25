@@ -204,7 +204,7 @@ call AppendIdent( _
 + ":B;o;" _
   + "slgx_?=1-log(1+YR_?)/2 " _
   + "rplgo_?=slgx_?*ph_?(-1)/ph_?+(1-slgx_?)*rpfa_? " _
-  + "LG_?=AGF_?-NGF_?+LGADJ_? " _
+  + "LG_?=AGF_?-NGF_?+(0.01*irm_?*LG_?(-1))+LGADJ_?-iLGADJ_? " _
   + "LGF_?=LG_?-LGO_? " _
   + "AGF_?=NGI_?+@iif(NGF_?>0,NGF_?,0) " _
   + "NGF_?=NLG_?+AGF_?(-1)+HAGF_?-IAGO_?-LGO_?(-1)*rplgo_?" _

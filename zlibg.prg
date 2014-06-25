@@ -92,7 +92,7 @@ while %lib_b <> ""
 
   '--- enforce standard colouring of series
   call CountTokens(%lib_s, " ", !lib_nser)
-  call zColor(%lib_g, !lib_nser)
+  call zColor(%lib_g,  !lib_nser)
 
   '--- shade the forecast period
   if @val(%Last) > @val(%Endfit) then
