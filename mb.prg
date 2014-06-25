@@ -90,7 +90,6 @@ subroutine MBBuild(model p_m, table p_tDef, scalar p_nDef, _
 '            up to the end date
 '       %p_tlrev  shares for revenue items separated by blanks
 '       %p_tlexp  shares for expenditure items separated by blanks
-'       %p_def_scale scale factor used to introduce deficit spending
 '       %p_rev_lag lag revenues by this many years
 ' 
 ' Ret:
@@ -376,7 +375,7 @@ subroutine zMBAppend(model p_m, string %p_series, _
 '
 '---------------------------------------------------------------
 series {%p_series} = 0
-call pLog(%p_series + "=" + %p_expr)
+'call pLog(%p_series + "=" + %p_expr) ' uncomment for debugging
 p_m.append @identity {%p_series} = {%p_expr}
 endsub
 

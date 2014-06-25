@@ -7,14 +7,8 @@
 ' The program reads SOL0.wf1 and creates SOLEB.wf1
 '
 ' differences from sol0
-'   government budget cuts in US, OD and EU (net revenue limits)
 '   debt ceilings in Europe (cuts in government spending)
-'   negative impact of EU crisis on investment in EUW and EUN
-'   debt ceilings in the US, OD and JA (cuts in govt spending)
-'   CIS ceiling on budget surplus
-'   more relocation of industry to India and S America
-'   more raw material exports from Africa and S America
-'
+
 '==================================================================
 ' OPTIONS
 '==================================================================
@@ -78,7 +72,7 @@ call Fix("IAGO_ENE", "level", "0")
 
 
 '--- Europe: attempt at ceiling on debt ratios
-call Target("G_EUC","LG_EUC/VV_EUC", ".6", 1, 30)
+call Target("G_EUC","LG_EUC/VV_EUC", ".5", 1, 5)
 call Target("G_FR", "LG_FR/VV_FR",   ".6", 1, 30)
 call Target("G_EUP","LG_EUP/VV_EUP", ".6", 1, 30)
 call Target("G_ENC","LG_ENC/VV_ENC", ".6", 1, 30)
@@ -89,7 +83,7 @@ call Target("G_UK", "LG_UK/VV_UK",   ".6", 1, 30)
 IP_EUC_ins.fill(s) -0.04, -0.06, -0.06, -0.04, -0.04, -0.02 
 IP_FR_ins = 0.5*IP_EUC_ins
 IP_ENC_ins = 0.5*IP_EUC_ins
-
+IP_EUP_ins = 0.5*IP_EUC_ins
 
 call Limit (95, "ALL")
 

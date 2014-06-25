@@ -402,6 +402,10 @@ subroutine zCreateGraph(string %p_Name, string %p_Title, _
 ' Ret:  p_nrow      updated number of rows
 '
 '---------------------------------------------------------------------
+
+' These 'type' options are currently not working to to
+' subroutine zColor having name clash with another file
+
 %opt = "line"
 %ctype = "l"
 %width = "4"
@@ -461,7 +465,7 @@ endif
 '--- standard colouring of series
 !nser = 0
 call CountTokens(%p_tlSer, " ", !nser)
-call zColor(%p_Name, %ctype, !nser)
+call zColor(%p_Name, !nser)
 '--- zeroline
 if @instr(%p_tlOpt, "0") > 0 then {%p_Name}.scale zeroline endif
 
@@ -592,7 +596,7 @@ if !qNTData then
 endif
 endsub
 
-subroutine zColor(string %Name, string %Type, scalar nser)
+'subroutine zColor(string %Name, string %Type, scalar nser)
 '======================================================
 'Color a multi-graph
 '
@@ -602,31 +606,31 @@ subroutine zColor(string %Name, string %Type, scalar nser)
 '
 '---------------------------------------------------------------
 
-if nser > 14 then return endif
+'if nser > 14 then return endif
 
-if nser = 1 then
-  {%Name}.setelem(1) linecolor(blue)
-else
+'if nser = 1 then
+'  {%Name}.setelem(1) linecolor(blue)
+'else
   '--- color list: 0,127,255 is cyan  205,16,118 is pink
   '                139,35,35 is brown, 128,128,0 is olive 
   '                0,128,128 is teal, 46,139,87 is mint
   '                139,102,139 is plum
   ' red blue gray green purple cyan orange black pink brown
   ' olive teal mint plum"  
-  if %Type = "l" then
-  %llib_tl = "blue red black green purple 0,127,255 orange gray " _
-    + "205,16,118 139,35,35 128,128,0 0,128,128 46,139,87 139,102,139"
-  else  
-    %llib_tl = "78,255,255 255,128,32 255,255,78 78,255,78 255,128,255 " _
-    + "127,127,255 223,128,0 78,78,78 " _
-    + "237,16,118 139,35,35 128,128,0 0,128,128 46,139,87 139,102,139"
-  endif  
-  for !llib_i = 1 to nser
-    call Token(%llib_tl, " ", %llib_g)
-    {%Name}.setelem(!llib_i) {%Type}color({%llib_g})
-  next
-endif
-endsub
+'  if %Type = "l" then
+'  %llib_tl = "blue red black green purple 0,127,255 orange gray " _
+'    + "205,16,118 139,35,35 128,128,0 0,128,128 46,139,87 139,102,139"
+'  else  
+'    %llib_tl = "78,255,255 255,128,32 255,255,78 78,255,78 255,128,255 " _
+'    + "127,127,255 223,128,0 78,78,78 " _
+'    + "237,16,118 139,35,35 128,128,0 0,128,128 46,139,87 139,102,139"
+'  endif  
+'  for !llib_i = 1 to nser
+'    call Token(%llib_tl, " ", %llib_g)
+'    {%Name}.setelem(!llib_i) {%Type}color({%llib_g})
+'  next'
+'endif
+'endsub
 
 subroutine zLegend(string %Name, scalar nser, _
   scalar nLegend, string %tlLegend, string %p_Font)
