@@ -85,7 +85,15 @@ IP_FR_ins = 0.5*IP_EUC_ins
 IP_ENC_ins = 0.5*IP_EUC_ins
 IP_EUP_ins = 0.5*IP_EUC_ins
 
-call Limit (95, "ALL")
+' Interest rate ceilings
+call Ceiling("im_UK", "irm_UK", "1.5", 0, 90)
+call Fix("im_EUC", "level", "1.5")
+call Ceiling("im_FR", "irm_FR", "2.0", 0, 90)
+call Ceiling("im_EUP", "irm_EUP", "3", 0, 90)
+call Ceiling("im_ENC", "irm_ENC", "1.5", 0, 90)
+call Ceiling("im_ENE", "irm_ENE", "3.5", 0, 90)
+
+call Limit (99, "ALL")
 
 '==================================================================
 ' PROCESSING

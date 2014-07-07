@@ -58,56 +58,67 @@ IP_EUP_ins = 0
 table t_MB
 scalar nMB = 0
 
-'--- Debt transfers
-call MBTrans(m_wmef, "EU", "EUC FR EUP", "2015", %actual, "0.55", "1.0 0.0")
-
 '--- Fiscal mechanism
 
 call MBDef(t_MB, nMB, "EU", "EUC FR EUP", _
   "Private Wealth:WP_?; Income per capita:Y_?/N_?", _
   "Per capita:N_?;Employment support:NE_?(-1):0.85*NWP_?(-1):50000;", _
-  "1.8 1.0 0.6", "1 1 1" _
+  "1.8 1.0 0.6", "1 1 1", "2" _
 )
 
-call MBBuild(m_wmef, t_MB, nMB, "EU","1 1.33 1.66 2 2.5 3", "60 40", "40 60", "0")
+call MBBuild(m_wmef, t_MB, nMB, "EU","1 1.33 1.66 2 2.5 3", "60 40", "40 60")
+
+
+'--- Debt transfers
+call MBTrans(m_wmef, t_MB, nMB, "EU", "0 0 0.55", "2015", %actual)
+
+' IP_EUE_ins=-0.01
+' IP_EUN_ins = 0.00 
+' 
+' ' Mild wage rises, with a lag in EUW
+ SP_EUC_ins=-0.002
+ SP_EUC_ins.fill(s) 0, 0, 0, 0, 0, 0 , 0, -0.002, -0.002, -0.002
+' 
+' ' Saving increase in EUE to keep a lid on expansion
+' SP_EUE_ins=0.02
+' SP_EUE_ins.fill(s) 0.03, 0.05, 0.05, 0.03, 0.02
+' 
+' ' Lagged and mild investment stimulus in Core Eurozone
+IP_EUC_ins=0.02
+IP_EUC_ins.fill(s) 0, 0, 0, 0, 0.02
+' 
+' ' UK Exchange rate devaluation
+' 
+ call Target("rxu_UK", "rx_UK/rx_US", "0.88", 1, 10)
+' 
+' ' EUE Exchange rate foor
+' call Floor("rxu_EUE", "rx_EUE/rx_US", "0.6 0.55 *0.55", 1, 20)
+' 
+' ' EUN Exchange rate ceiling
+' call Ceiling("rxu_EUN", "rx_EUN/rx_US", "1.7", 1, 30)
+' 
 '
-' Government and investment stimulus
-
-'IP_EUE_ins=-0.01
-
-' Wage rises
-' SP_EUC_ins=-0.007
-' SP_EUC_ins.fill(s) 0, 0, 0, 0, -0.003, -0.004 '-0.007, -0.010, '-0.013
-
-' UK Exchange rate devaluation
-'call Target("rxu_UK", "rx_UK/rx_US", "0.75", 1, 10)
-
-' EUE Exchange rate foor
-'call Floor("rxu_EUE", "rx_EUE/rx_US", "0.6 0.6 0.6 0.55 0.55 0.55 0.50 0.50 0.50 0.48 0.48 0.45 0.45 *0.4", 1, 20)
-
-' EUN Exchange rate ceiling
-'call Ceiling("rxu_EUN", "rx_EUN/rx_US", "1.7", 1, 30)
-
-
-' Investment Floors
-'call Floor("IP_UK", "IP_UK/VV_UK", "0.15", 0, 10)
-'call Floor("IP_EUW", "IP_EUW/VV_EUW", "0.18", 0, 30)
-'call Floor("IP_EUS", "IP_EUS/VV_EUS", "0.18", 0, 30)
-'call Floor("IP_EUN", "IP_EUN/VV_EUN", "0.18", 0, 10)
-
-' Govt spending Floors
-'call Floor("G_UK", "G_UK/VV_UK", "0.24", 0, 10)
-'call Floor("G_EUW", "G_EUW/VV_EUW", "0.245", 0, 10)
-'call Ceiling("G_EUS", "G_EUS/VV_EUS", "0.26", 0, 10)
-'call Ceiling("G_EUN", "G_EUN/VV_EUN", "0.32", 0, 70)
-'call Floor("G_EUE", "G_EUE/VV_EUE", "0.25", 0, 10)
-
-'--- Revenue Increase US and Europe
-'call Target("YG_EUS","(YG_EUS-YGADJ_EUS)/VV_EUS", ".20 .21 *.22", 0, 20)
-'call Target("YG_EUW","(YG_EUW-YGADJ_EUW)/VV_EUW", ".21 .22 *.23", 0, 30)
-'call Target("YG_UK","YG_UK/VV_UK", ".21 .22 .23 *.24", 0, 30)
-'call Target("YG_EUN","YG_EUN/VV_EUN", ".29 .30 *.31", 0, 30)
-'call Target("YG_EUE","YG_EUE/VV_EUE", ".20 .21 .22 .23 *.24", 0, 10) 
+ call Floor("IP_UK", "IP_UK/VV_UK", "0.18", 0, 10)
+ call Floor("IP_EUP", "IP_EUP/VV_EUP", "0.21", 0, 15)
+ call Floor("IP_FR", "IP_FR/VV_FR", "0.21", 0, 15)
+' call Floor("IP_EUN", "IP_EUN/VV_EUN", "0.19", 0, 10)
+' call Target("IP_EUE", "IP_EUE/VV_EUE", "0.175", 0, 10)
+' 
+' call Floor("G_UK", "G_UK/VV_UK", "0.24", 0, 10)
+call Floor("G_EUC", "G_EUC/VV_EUC", "0.23", 0, 10)
+call Floor("G_EUP", "G_EUP/VV_EUP", "0.24", 0, 10)
+' call Ceiling("G_EUN", "G_EUN/VV_EUN", "0.32", 0, 70)
+' call Floor("G_EUE", "G_EUE/VV_EUE", "0.22", 0, 3)
+' 
+' '--- Revenue Increase US and Europe
+call Target("YGD_EUC","(YG_EUC-YGADJ_EUC)/VV_EUC", ".20 .21 .22 .23 *.24", 0, 20)
+' call Target("YG_EUS","(YG_EUS-YGADJ_EUS)/VV_EUS", ".20 .21 *.22", 0, 20)
+' call Target("YG_EUW","(YG_EUW-YGADJ_EUW)/VV_EUW", ".21 .22 .23 *.24", 0, 30)
+' call Target("YG_UK","(YG_UK-YGADJ_UK)/VV_UK", ".21 .22 .23 *.24", 0, 30)
+' call Target("YG_EUN","(YG_EUN-YGADJ_EUN)/VV_EUN", ".30 .31 .32 *.33", 0, 30)
+' call Target("YG_EUE","(YG_EUE-YGADJ_EUE)/VV_EUE", ".20 .21 *.22", 0, 10) 
+' 
+' Interest rate ceilings are in SOLEB and don't need to be restated
 
 call Limit (95, "ALL")
 '==================================================================

@@ -529,11 +529,24 @@ endsub
 
 
 
-subroutine MBTransfer(model p_m, table p_tDef, scalar p_nDef, _
+subroutine MBTrans(model p_m, table p_tDef, scalar p_nDef, _
 	string %p_group, string %p_pct, _
 	string %p_start, string %p_actual)
 '=====================================================
 ' Set up transfers from national debts onto a federal budget
+'
+' Call: p_m          model to add identities to
+'       p_tDef       Federal budget definition table
+'       p_ndef       number of rows in table
+'       %p_group     group identifier
+'       %p_pct       target debt level as % of GDP
+'       %p_actual    last actual
+'       %p_predict   last predicted
+'
+' Ret:  group and bloc tables on tables page
+'
+'---------------------------------------------------------------
+
 	call pLog("Initialising debt transfers for "+%p_group)
 	call pLog("Percentage transfers: "+%p_pct)
 	' locate row of definition table based on group identifier
@@ -590,7 +603,6 @@ subroutine MBTransfer(model p_m, table p_tDef, scalar p_nDef, _
 	%s = "LG_?(-1)*irm_?*0.01" 
 	call zMBAppend(p_m, "irmLG_"+%b, _
                             @replace(%s, "?", %b))
-
 
     wend
 endsub
