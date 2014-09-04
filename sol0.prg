@@ -112,6 +112,23 @@ ei_IN_a = 0.1
 ei_CIS_a = 0.1
 ei_EUC_a = 0.05
 
+'--adjust C and I to get stagnation but not recession
+
+IP_EUC_ins =  -0.02
+SP_EUC_ins =  0.01
+
+smpl 2022 %end
+IP_FR_ins = 0.005
+IP_FR_ins.fill(s) 0.001, 0.002, 0.003, 0.004
+SP_FR_ins = -0.007
+SP_FR_ins.fill(s) -0.002, -0.004, -0.005, -0.006
+
+IP_UK_ins = 0.015
+IP_UK_ins.fill(s) 0.001, 0.002, 0.003, 0.006, 0.008, 0.011
+SP_UK_ins = -0.008
+SP_UK_ins.fill(s) -0.002, -0.004, -0.006, -0.007
+
+
 call Limit(95, "ALL")
 '==================================================================
 ' PROCESSING
@@ -123,4 +140,3 @@ call pCheckSolveReport({%gm}, %actual, %actual, %predict, _
 call pEnd
 
 endsub
-
