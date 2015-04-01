@@ -13,6 +13,7 @@
 ' OPTIONS
 '==================================================================
 include "set"
+include "zlibj"  ' additional library and presentation routines
 call solEb
 '------------------------------------------------------------------
 subroutine solEb
@@ -20,11 +21,11 @@ subroutine solEb
 %actual = "2014"
 
 %graphs = "Yes"
-%graphcomp = "Yes"
-%markets = "No"
+%graphcomp = "No"
+%markets = "Yes"
 %tables = "Yes"
-%analysis = "No"
-%csv = "No"
+%analysis = "Yes"
+%csv = "Yes"
 
 '================================================================
 ' PREFACE
@@ -41,7 +42,7 @@ t_Settings(1,2) = %actual
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)
 t_Settings(3,2) = "Eb"
-t_Settings(4,2) = "Austerity"
+t_Settings(4,2) = "Secular Stagnation"
 
 call pCreateScenario(%gm, %alias)
 
@@ -60,29 +61,40 @@ call Fix("IAGO_ENC", "level", "0")
 call Fix("IAGO_UK", "level", "0")
 call Fix("IAGO_ENE", "level", "0")
 
+call DropRules("G_EUC G_FR G_EUP G_ENC G_UK")
+call DropRules("IP_CN_a")
 
-'--- Europe: attempt at ceiling on debt ratios
-'call Target("G_EUC","LG_EUC/VV_EUC", ".5", 1, 5)
-'call Target("G_FR", "LG_FR/VV_FR",   ".6", 1, 30)
-'call Target("G_EUP","LG_EUP/VV_EUP", ".6", 1, 30)
-'call Target("G_ENC","LG_ENC/VV_ENC", ".6", 1, 30)
-'call Target("G_UK", "LG_UK/VV_UK",   ".6", 1, 30)
-' Nothing for Eastern Europe?
+'--- Europe: attempt at cutting government expenditure
+call Ceiling("G_EUC","G_EUC/VV_EUC", "0.23 0.225 *0.22", 0, 30)
+call Ceiling("G_FR", "G_FR/VV_FR",   "0.27 0.265 *0.26", 0, 30)
+call Ceiling("G_EUP","G_EUP/VV_EUP", "0.22 0.215 *0.21", 0, 30)
+call Ceiling("G_ENC","G_ENC/VV_ENC", "0.24", 0, 30)
+call Ceiling("G_UK", "G_UK/VV_UK", "0.23 0.225 0.22 *0.215", 0, 30)
 
-'--- negative investment impact of European crisis
-'IP_EUC_ins.fill(s) -0.04, -0.06, -0.06, -0.04, -0.04, -0.02 
-'IP_FR_ins = 0.5*IP_EUC_ins
-'IP_ENC_ins = 0.5*IP_EUC_ins
-'IP_EUP_ins = 0.5*IP_EUC_ins
+' --- Adjustments in trends of private investment
+call Floor("IP_EUP","IP_EUP/VV_EUP", "0.17 0.175 0.18 0.185 0.185 0.18 0.175 *0.17", 0, 20)
+call Floor("IP_FR","IP_FR/VV_FR", "0.175 0.18 0.185 0.185 0.18 0.175 *0.17", 0, 30)
+call Floor("IP_EUC","IP_EUC/VV_EUC", " 0.17 0.175 0.18 0.18 0.18 0.175 *0.17", 0, 30)
+call Floor("IP_UK","IP_UK/VV_UK", "0.15 0.155 0.16 0.165 *0.16", 0, 30)
 
 ' Interest rate ceilings
-call Ceiling("im_UK", "irm_UK", "1.5", 0, 90)
-'call Fix("im_EUC", "level", "1.5")
-call Ceiling("im_EUC", "irm_EUC", "1.5", 0, 90)
-call Ceiling("im_FR", "irm_FR", "2.0", 0, 90)
-call Ceiling("im_EUP", "irm_EUP", "3", 0, 90)
-call Ceiling("im_ENC", "irm_ENC", "1.5", 0, 90)
-call Ceiling("im_ENE", "irm_ENE", "3.5", 0, 90)
+call Ceiling("im_UK", "irm_UK", "1.7", 0, 90)
+call Ceiling("im_EUC", "irm_EUC", "0.8", 0, 90)
+call Ceiling("im_FR", "irm_FR", "1.3", 0, 90)
+call Ceiling("im_EUP", "irm_EUP", "2.1", 0, 90)
+call Ceiling("im_ENC", "irm_ENC", "1.1", 0, 90)
+call Ceiling("im_ENE", "irm_ENE", "2.9", 0, 90)
+'call Fix("im_EUC", "level", "1.5") 
+
+' ---- Reduction in government income
+YGD_FR_ins=-0.02
+YGD_EUP_ins=-0.03
+YGD_EUC_ins=-0.01
+YGD_UK_ins=-0.02
+YGD_ENE_ins=-0.02
+
+'Slowdown in Energy demand China
+ED_CN_ins=-0.05
 
 call Limit (99, "ALL")
 
@@ -92,6 +104,9 @@ call Limit (99, "ALL")
 
 call pCheckSolveReport({%gm}, %actual, %actual, %predict, _
   "o=g", 8)
+'call mk_extra_graphs("eb; Austerity: ef; Federal")
 call pEnd
 
 endsub
+
+
