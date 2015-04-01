@@ -578,11 +578,15 @@ subroutine MBTrans(model p_m, table p_tDef, scalar p_nDef, _
 	%s  =  %p_group + "_LG_?(-1)+LG_?*" + %lgpct
 	call zMBAppend(p_m, %lg, @replace(%s, "?", %b))
 	
+	call pLog(%lg +" = " + @replace(%s, "?", %b))
+
 	' Calculate the reduction in total interest payments on the debt
 	%s = "(irm_?-"+%irm+")*0.01*"+%lg
 	call zMBAppend(p_m, "iLGADJ_"+%b, _
                             @replace(%s, "?", %b))
 	
+	call pLog("iLGADJ_" + %b + " = " + @replace(%s, "?", %b))
+
 	smpl @all
 	{%lg}=0
 
