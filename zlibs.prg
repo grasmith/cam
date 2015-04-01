@@ -109,6 +109,7 @@ if @upper(@left(%tables,1)) = "Y" then %tlopt = %tlopt + "T" endif
 if @upper(@left(%analysis,1)) = "Y" then %tlopt = %tlopt + "A" endif
 if @upper(@left(%csv,1)) = "Y" then %tlopt = %tlopt + "C" endif
 if @upper(@left(%markets,1)) = "Y" then %tlopt = %tlopt + "M" endif
+if @upper(@left(%grtab,1)) = "Y" then %tlopt = %tlopt + "D" endif
 !qgraphcomp = @upper(@left(%graphcomp,1)) = "Y"
 if %tlopt <> "" then call pReport(%tlopt,!qgraphcomp) endif
 

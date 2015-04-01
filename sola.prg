@@ -1,6 +1,6 @@
 'PROGRAM: sola.prg       Copyright (C) 2012,2014 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2  EUR variant
+' CAM Version 5.2  ASIA variant
 '
 ' Align the model to match values loaded from ALIGN.XLS
 '
@@ -21,7 +21,7 @@
 '
 ' Results are recorded as actuals
 '
-' updated: FC 30/05/2014
+' updated: NK 17/12/2014
 '
 '==================================================================
 ' OPTIONS
@@ -89,21 +89,21 @@ m_wmo.addassign @stochastic
 smpl %latest+1 %align
 
 '--- reduced trend growth of carbon energy supply in Europe and China
+EPC_DE_ins = -0.01
 EPC_EUC_ins = -0.01
-EPC_EUP_ins = -0.01
 EPC_UK_ins = -0.01
-EPC_ENE_ins = -0.01
+EPC_OEU_ins = -0.01
 EPC_CN_ins = -0.02
 
 '--- nuclear energy supply
 '    reduced trends in main countries
 EPN_US_ins = -0.02
-EPN_CAN_ins = -0.03
+EPN_FR_ins = -0.03
 EPN_CN_ins = -0.02
 EPN_CIS_ins = -0.03
-EPN_FR_ins = -0.02
-'    Japan: gradual restart
-EPN_JA_ins = -0.1
+EPN_UK_ins = -0.02
+'    Japan: 2012 closedown and gradual, partial restart
+EPN_OEH_ins = 0
 
 smpl %latest+1 %end
 
@@ -159,10 +159,10 @@ call pLog("defining adustment rules")
 
 '--- dollar price of oil (index)
 '    align by supply adjustment in main export blocs
-call Target("EPC_WA","pe$_w","pew$_tar",-5,100)
-call Link("EPC_CI","EPC_WA",1)
-call Link("EPC_ACX","EPC_WA",0.5)
-call Link("EPC_AFS","EPC_WA",0.5)
+call Target("EPC_NWA","pe$_w","pew$_tar",-5,100)
+call Link("EPC_CIS","EPC_NWA",1)
+call Link("EPC_ACX","EPC_NWA",0.5)
+call Link("EPC_AFL","EPC_NWA",0.5)
 
 '--- GDP, current account and nominal exchange rate
 for !i = 1 to nBloc

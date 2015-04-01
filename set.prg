@@ -1,13 +1,13 @@
 'PROGRAM: set.prg          Copyright (C) 2014 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2 EUR variant
+' CAM Version 5.2 FESSUD variant
 '
 ' settings
 '
 ' this program fragment is included in all executable programs
 ' it initialises the system and provides common settings
 '
-' updated: FC 05/06/2013
+' updated: FC 16/12/2014
 '
 '=======================================================
 
@@ -23,10 +23,10 @@ include "zrep"
 include "zimpact"
 
 '--- title for reports
-%sysTitle = "CAM 5.2 with ASIA blocs"
+%sysTitle = "CAM 5.2 with FESSUD blocs"
 
 '--- data source (historical series)
-!nSeries = 3008
+!nSeries = 3007
 
 '--- default simulation horizon
 %predict = "2030"
@@ -49,44 +49,58 @@ include "zimpact"
 '--- graph coverage
 '    B blocs, F first blocs, O other blocs,
 '    G groups, W world
-%repgeo = "FO"
+%repgeo = "FOG"
 %subgraphs = "No"
+'--- tables with data from graphs to be generated
+'    on the tables page with same names as the graphs
+%grtab = "No"
+
+'--- bloc charts can be displayed in two groups
+'    F first and O other (the rest)
+'    this parameter selects the number of blocs in the
+'    first group counting from the top of the list
+!nFirstBlocs = 6
 
 '--- blocs
-!nFirstBlocs = 6
 %blocs = "" _
-  + "euc;Core eurozone:" _
+  + "de;Germany:" _
   + "fr;France:" _
+  + "uk;UK:" _
+  + "euc;Core eurozone:" _
   + "eup;Eurozone periphery:" _
-  + "enc;North Europe non-euro:" _
-  + "uk;United Kingdom:" _
-  + "ene;East Europe non-euro:" _
+  + "oeu;Other Europe:" _
+  + "us;USA:" _
+  + "cn;China:" _
+  + "in;India:" _
+  + "br;Brazil:" _
+  + "id;Indonesia:" _
+  + "za;South Africa:" _
   + "tr;Turkey:" _
   + "cis;CIS and other:" _
-  + "nwa;North Africa and West Asia:" _
-  + "afl;Africa Low Income:" _
-  + "za;South Africa:" _
-  + "in;India:" _
-  + "osa;Other South Asia:" _
-  + "cn;China:" _
-  + "ja;Japan:" _
-  + "oeh;Other East Asia High Income:" _
-  + "oea;Other East Asia:" _
   + "can;Canada,Australia,New Zealand:" _
-  + "us;USA:" _
+  + "oeh;Other East Asia High Income:" _
+  + "nwa;North Africa and Other West Asia:" _
   + "acx;Central America and Caribbean:" _
-  + "br;Brazil:" _
   + "oam;Other South America:" _
-  + ""
+  + "oea;Other East Asia:" _
+  + "osa;Other South Asia:" _
+  + "afl;Africa Low Income:"
 
-'--- bloc aggregates
+'--- groups of blocs: change as required
+'    the groups can overlap (a bloc can be in
+'    more than one group) 
 %groups = "" _
- + "EU;Europe;euc fr eup enc uk ene:" _
- + "CMEA;CIS, Middle East and Africa;" _
-    + "cis tr nwa afl za:" _
- + "ROA;Rest of Asia;" _
-    + "ja cn oeh oea in osa:" _
- + "RAM;America;" _
-    + "can us acx br oam:" _
- + ""
+ + "BRICS; BRICS;" _
+    + "br cis in cn za:" _
+ + "EUR; Europe;" _
+    + "de fr uk euc eup oeu:" _
+ + "ROW;Rest of world;" _
+    + "id tr us can oeh nwa acx oam oea osa afl:" _
+ + "OHI;Other high income;" _
+    + "us oeh can:" _
+ + "OMI;Other middle income;" _
+    + "tr nwa acx oam:" _
+ + "OLI;Other low income;" _
+    + "id oea osa afl:"
+
 '=======================================================

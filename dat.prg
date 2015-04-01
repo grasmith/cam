@@ -1846,6 +1846,7 @@ if @upper(@left(%tables,1)) = "Y" then %tlopt = %tlopt + "T" endif
 if @upper(@left(%analysis,1)) = "Y" then %tlopt = %tlopt + "A" endif
 if @upper(@left(%csv,1)) = "Y" then %tlopt = %tlopt + "C" endif
 if @upper(@left(%markets,1)) = "Y" then %tlopt = %tlopt + "M" endif
+if @upper(@left(%grtab,1)) = "Y" then %tlopt = %tlopt + "D" endif
 if %tlopt <> "" then call pReport(%tlopt, 0) endif
 
 call pEnd
@@ -1858,12 +1859,4 @@ p_Bloc.genr {%p_var}$_? = @cumsum(I{%g}$_?)
 p_Bloc.genr sf_? = @max(0.05*{%p_vref}$_?-{%p_var}$_?)
 p_Bloc.genr sf_? = @iif(sf_?>0, sf_?, 0)
 p_Bloc.genr {%p_var}$_? = sf_? + {%p_var}$_?
-'smpl %start %start
-'p_Bloc.genr {%p_var}$_? = {%p_var}$_? + _
-' ({%p_vref}$_?-I{%p_vref}$_?)*@elem({%p_var}$_?, 1980) _
-'  /(@elem({%p_vref}$_?,1980)-{%p_vref}$_?+I{%p_vref}$_?)
-'smpl %start+1 %end
-'p_Bloc.genr {%p_var}$_? = {%p_var}$_? + _
-'             @elem({%p_var}$_?, %start)
-'smpl %start %end
 endsub

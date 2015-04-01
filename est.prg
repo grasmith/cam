@@ -12,7 +12,7 @@
 ' you can get different types of estimation output by
 ' switching on options listed below
 '
-' updated: FC 30/05/2014
+' updated: FC 30/09/2014
 '
 '==================================================================
 ' OPTIONS
@@ -30,6 +30,8 @@ subroutine est
 
 '--- conditioning variable in models 3 and 4
 %condvar = "per capita GDP:c*log(VVN_?(-1))"
+'--- standard estimation options (all models)
+%stdopt = "wgt=cxdiag,cov=cxwhite,iter=seq"
 '--- estimation options in models 2 and 4
 %estopt = "cx=f"
 
@@ -71,10 +73,39 @@ call ListCol(t_Bloc, 1, nBloc, 1, " ", %blocs)
 table t_Eq
 scalar nEq = 0
 
+'========= WELL-BEING INDICATORS
+call AddEquation(%blocs, "JHD human development index;(1);" _
+  + "dlog(JHD_?) = " _
+  + "error correction:c*log(JHD_?(-1));" _
+  + "momentum:c*dlog(JHD_?(-1));" _
+  + "per capita income:c*1/VVN_?(-1)^0.8;" _
+  + "income growth:c*dlog(VVN_?)")
+
+  call AddEquation(%blocs, "JGN internal Gini index;(1);" _
+  + "d(JGN_?) = " _
+  + "momentum:c*d(JGN_?(-1));" _
+  + "income growth:c*log(VVN_?/VVN_?(-4));" _
+  + "government services:c*log(G_?(-1)/VV_?(-1))")
+
+call AddEquation(%blocs, "JIM infant mortality rate;(1);" _
+  + "dlog(JIM_?) = " _
+  + "error correction:c*log(JIM_?(-1));" _
+  + "momentum:c*dlog(JIM_?(-1));" _
+  + "per capita income:c*1/VVN_?(-1)^0.4;" _
+  + "income growth:c*dlog(VVN_?)")
+
+call AddEquation(%blocs, "JLX life expectancy at birth;()wgt=none;" _
+  + "dlog(JLX_?) = " _
+  + "error correction:c*log(JLX_?(-1));" _
+  + "momentum:c*dlog(JLX_?(-1));" _
+  + "income growth:c*log(VVN_?/VVN_?(-4));" _
+  + "per capita income:c*1/VVN_?(-1)^0.4;" _
+  + "trend:c*@trend()")
+
 '========= MIGRATION, URBANISATION AND EMPLOYMENT
 
 call Bound(%tlBound, _
-  "N NE NEAF NEAM NEF NEM NEIF NEIM " _
+  "N NE NEAF NEAM NEF NEM NEIF NEIM " _
   + "NLF NLM NLVF NLVM NLYF NLYM " _
   + "NULVF NULVM NULYF:-0.01 NULYM:-0.01 NUR " _
   + "NVF NVM NYF NYM " _
@@ -87,8 +118,9 @@ call AddEquation(%blocs, "NIMU net migration;4;" _
   + "momentum:c*dlog(1 + NIM_?(-1)/NE_?(-2));" _
   + "employment growth:0.02*dlog(NE_?)")
 
-call AddEquation(%blocs, "NUR urban population;-;" _
+call AddEquation(%blocs, "NUR urban population;-()wgt=none;" _
   + "dlog(1/(1/(NUR_?/N_?)-1)) = " _
+  + "momentum:c*dlog(1/(1/(NUR_?(-1)/N_?(-1))-1));" _
   + "GDP growth:c*log(VV_?/VV_?(-3))/3")
 
 call AddEquation(%blocs, _
@@ -228,9 +260,7 @@ call AddEquation(%blocs, "mu Profit and rent markup;4;" _
   + "dlog(1+mu_?/100) = " _
   + "error correction:c*log(1+mu_?(-1)/100);" _
   + "productivity growth:0.8*dlog(V_?/NE_?);" _
-  + "movement of terms of trade:c*dlog(tt_?);" _
-  + "change in energy exports:" _
-    + "c*d(XE$_?/(rx_?*VV_?))")
+  + "movement of terms of trade:0.6*dlog(tt_?)")
 
 '--- rejected
 '  + "energy exports:" _
@@ -591,14 +621,14 @@ call AddEquation(%blocs, _
  "MA$ imports of primary commodities; 1;" _
   + "dlog(MA$_?/MA0_?) = " _
   + "world prices:c*dlog(pa_w);" _
-  + "exchange rate:c*dlog(rx_?/pp0_?)")
+  + "real exchange rate appreciation:c*dlog(rx_?)")
 
 copy XA$_* XA$U_*
 call AddEquation(%blocs, _
  "XA$U exports of primary commodities;3;" _
   + "log(XA$U_?*XA0_?(-1)/(XA0_?*XA$_?(-1))) = " _
   + "world prices:c*dlog(pa_w);" _
-  + "exchange rate:c*dlog(rx_?/pp0_?)")
+  + "real exchange rate appreciation:c*dlog(rx_?)")
 
 '========= TRADE IN ENERGY PRODUCTS
 
@@ -621,23 +651,26 @@ call AddEquation(%blocs, _
 
 call AddEquation(%blocs, "ME$ imports of energy products; 1;" _
   + "dlog(ME$_?/ME0_?) = " _
-  + "world prices:c*dlog(pe_w)")
+  + "world prices:c*dlog(pe_w);" _
+  + "real exchange rate appreciation:c*dlog(rx_?)")
 
 copy XE$_* XE$U_*
 call AddEquation(%blocs, "XE$U exports of energy products; 1;" _
   + "log(((0.01+XE$U_?)/(0.01+XE0_?))" _
     + "/((0.01+XE$_?(-1))/(0.01+XE0_?(-1)))) = " _
-  + "world prices:c*dlog(pe_w)")
+  + "world prices:c*dlog(pe_w);" _
+  + "real exchange rate appreciation:c*dlog(rx_?)")
 
 '========= TRADE IN MANUFACTURES
 
 call AddEquation(%blocs, "MM$ imports of manufactures;-;" _
-  + "dlog(MM$_?) = " _
-  + "error correction:c*log(MM$_?(-1));" _
+  + "dlog(MM$_?/(rx_?*MMH_?)) = " _
+  + "error correction:" _
+    + "c*log(MM$_?(-1)/(rx_?(-1)*MMH_?(-1)));" _
   + "weighted demand:c*log(MMH_?(-1));" _
   + "real exchange rate:c*log(rx_?(-1));" _
   + "supplier prices:c*log(pmm0_?(-1));" _
-  + "growth of weighted demand:1*dlog(MMH_?);" _
+  + "growth of weighted demand:0.2*dlog(MMH_?);" _
   + "change in real exchange rate:c*dlog(rx_?);" _
   + "change in supplier prices:c*dlog(pmm0_?);" _
   + "trend:c*@trend()")
@@ -653,7 +686,7 @@ call AddEquation(%blocs, _
     + "/(MM0_?(-1)*pmm0_?(-1)/MM$_?(-1))) = " _
   + "error correction:c*log(MM0_?(-1)*pmm0_?(-1)/MM$_?(-1));" _
   + "supplier price change:c*dlog(pmm0_?);" _
-  + "exchange rate appreciation:c*dlog(rx_?)")
+  + "real exchange rate appreciation:c*dlog(rx_?)")
 
 '--- market shares for exports of manufactures
 
@@ -686,10 +719,11 @@ call AddEquation(%l, _
   + "increase in unit cost:c*dlog(ucx$_?(-1))")
 
 call AddEquation(%blocs, _
- "XM0 exports of manufactures at base-year prices;4;" _
+ "XM0 exports of manufactures at base-year prices;2;" _
   + "dlog(XM0_?/XM$_?) = " _
   + "error correction:c*log(XM0_?(-1)/XM$_?(-1));" _
-  + "unit cost:c*log(ucx$_?(-1))")
+  + "unit cost:c*log(ucx$_?(-1));" _
+  + "real exchange rate appreciation:c*dlog(rx_?)")
 
 '========= TRADE IN SERVICES
 
@@ -719,13 +753,13 @@ call AddEquation(%blocs, _
  "MS0U imports of services at base-year prices;4;" _
   + "log(MS0U_?*MS$_?(-1)/(MS$_?*MS0_?(-1))) = " _
   + "error correction:c*log(MS0_?(-1)/MS$_?(-1));" _
-  + "exchange rate appreciation:c*dlog(rx_?)")
+  + "real exchange rate appreciation:c*dlog(rx_?)")
 
 call AddEquation(%blocs, _
- "XS0 exports of services at base-year prices;4;" _
+ "XS0 exports of services at base-year prices;2;" _
   + "dlog(XS0_?/XS$_?) = " _
   + "error correction:c*log(XS0_?(-1)/XS$_?(-1));" _
-  + "exchange rate appreciation:c*dlog(rx_?)")
+  + "real exchange rate appreciation:c*dlog(rx_?)")
 
 '========= PHYSICAL ENERGY
 ' Global supply/demand balance is achieved by adjusting the
@@ -769,36 +803,6 @@ call AddEquation(%blocs, "EM primary energy imports; -;" _
 call AddEquation(%blocs, "CO2 CO2 emissions;4;" _
   + "dlog(CO2_?/(ED_?-EPN_?))+0.1*lttco2_? = " _
   + "error correction:c*log(CO2_?(-1)/(ED_?(-1)-EPN_?(-1)))")
-
-'========= WELL-BEING INDICATORS
-call AddEquation(%blocs, "JHD human development index;(1);" _
-  + "dlog(JHD_?) = " _
-  + "error correction:c*log(JHD_?(-1));" _
-  + "momentum:c*dlog(JHD_?(-1));" _
-  + "per capita income:c*1/VVN_?(-1)^0.8;" _
-  + "income growth:c*dlog(VVN_?)")
-
-  call AddEquation(%blocs, "JGN internal Gini index;(1);" _
-  + "dlog(JGN_?) = " _
-  + "error correction:c*log(JGN_?(-1));" _
-  + "momentum:c*dlog(JGN_?(-1));" _
-  + "income growth:c*log(VVN_?/VVN_?(-4));" _
-  + "government services:c*log(G_?(-1)/VV_?(-1))")
-
-call AddEquation(%blocs, "JIM infant mortality rate;(1);" _
-  + "dlog(JIM_?) = " _
-  + "error correction:c*log(JIM_?(-1));" _
-  + "momentum:c*dlog(JIM_?(-1));" _
-  + "per capita income:c*1/VVN_?(-1)^0.4;" _
-  + "income growth:c*dlog(VVN_?)")
-
-call AddEquation(%blocs, "JLX life expectancy at birth;(1);" _
-  + "dlog(JLX_?) = " _
-  + "error correction:c*log(JLX_?(-1));" _
-  + "momentum:c*dlog(JLX_?(-1));" _
-  + "income growth:c*log(VVN_?/VVN_?(-4));" _
-  + "per capita income:c*1/VVN_?(-1)^0.4;" _
-  + "trend:c*@trend()")
 
 '==================================================================
 ' PROCESSING
@@ -861,7 +865,9 @@ for !i = 1 to nEq
   if %tlspec <> "" and @instr(%tlspec, %spec) = 0 then
     %spec = @left(%tlspec,1)
   endif
-  %eqb = t_Eq(!i,6)
+  '--- special options
+  %spopt = t_Eq(!i,6)
+  %eqb = t_Eq(!i,7)
   '--- create the pool for the equation
   pool p_{%var} {%list}
 
@@ -918,8 +924,11 @@ for !i = 1 to nEq
     if !iuse = 3 or !iuse = 4 then
       %eq = %eqb + ";" + %condvar
     endif
-    %lsopt = "wgt=cxdiag,cov=cxwhite,iter=seq"
+    %lsopt = %stdopt
     '--- estimation options
+    if %spopt <> "" then
+      %lsopt = %spopt + "," + %lsopt
+    endif
     if !iuse = 2 or !iuse = 4 then
       %lsopt = %estopt + "," + %lsopt
     endif
@@ -984,7 +993,7 @@ for !i = 1 to nEq
     !n = @floor(@sqrt(nbloc-1)+1)
     if %var = "sxm" or !n > 7 then !n = 7 endif
     call BlocGraph("grf_" + %var, %desc, %list, %ss, %tt, "", "", _
-      !n, %first, %latest, %latest)
+      !n, %first, %latest, %latest, 0)
     delete sgrb*
   endif
 next
@@ -997,15 +1006,7 @@ smpl %start %end
 series pa_w_ins = 0
 smpl %startest %endest
 equation eq_pa_w.ls dlog(pa_w)-pa_w_ins _
-  log(pa_w(-1)) dlog(V_W,2) dlog(V_W(-1)) c ar(1)
-
-'--- reestimate intercept and ar
-smpl %startfit %endest
-%s = @str(eq_pa_w.@coefs(1)) + "*log(pa_w(-1))" _
-   + "+" + @str(eq_pa_w.@coefs(2)) + "*dlog(V_W,2)" _
-   + "+" + @str(eq_pa_w.@coefs(3)) + "*dlog(V_W(-1))"
-%s = "dlog(pa_w)-pa_w_ins-(" + %s + ") c ar(1)"
-eq_pa_w.ls {%s}
+  c log(pa_w(-1)) dlog(XA0_W/V_W) ar(1)
 
 '--- market shares for exports of manufactures
 smpl %start %end
@@ -1106,10 +1107,12 @@ subroutine AddEquation(string %List, string %Def)
 '
 ' Options include
 '  -    use the default estimation variant (model 2)
-'  1-4  use a given variant 1..4
+'  j    use model j (in range 1..4)
 '  R    use recent data to fit intercepts and AR(1)
 '  (k..)  restricted list of variants to be estimated (in case
 '         some models break down or do not converge)
+'  special options - after the () term (see EV pool.ls command)
+'  e.g. wgt=none
 '
 ' Columns of the table store the following information
 '
@@ -1130,7 +1133,10 @@ subroutine AddEquation(string %List, string %Def)
 '
 '   5  if not blank, list of variants to be estimated
 '
-'   6  the equation written as lhs = rhs
+'   6  if not blank, special estimation options
+'      e.g. wgt=none
+'
+'   7  the equation written as lhs = rhs
 '      where the first variable in the lhs expression is the
 '      dependent variable (includes U if the variable will be
 '      adjusted, and _? if used with a pool)
@@ -1164,9 +1170,8 @@ call Token(%lib_s, " ", %lib_v)
 t_Eq(nEq, 2) = %lib_v
 t_Eq(nEq, 3) = %lib_s
 
-'--- model or model (spec list)
+'--- model R (spec list) options
 call Token(%lib_eq, ";", %lib_s)
-'--- check for m(s)
 call Token(%lib_s, "(", %lib_m)
 if %lib_s = "" then
   %lib_tl = ""
@@ -1175,9 +1180,10 @@ else
 endif 
 t_Eq(nEq, 4) = %lib_m
 t_Eq(nEq, 5) = %lib_tl
+t_Eq(nEq, 6) = %lib_s
 
 '--- rhs = lhs
-t_Eq(nEq, 6) = %lib_eq
+t_Eq(nEq, 7) = %lib_eq
 
 endsub
 
@@ -1713,3 +1719,4 @@ while %tl <> ""
 wend
 
 endsub
+

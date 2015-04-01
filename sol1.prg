@@ -1,8 +1,8 @@
 'PROGRAM: sol1.prg    Copyright (C) 2013,2014 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2   EUR variant
+' CAM Version 5.2   FESSUD variant
 '
-' investment boost
+' EU investment boost
 '
 ' The program reads SOL0.wf1 and creates SOL1.wf1
 '
@@ -19,8 +19,8 @@ subroutine sol1
 %actual = "2014"
 
 %graphs = "Yes"
-%graphcomp = "No"
-%markets = "Yes"
+%graphcomp = "Yes"
+%markets = "No"
 %tables = "No"
 %analysis = "No"
 %csv = "No"
@@ -38,7 +38,7 @@ call pLog("SOL1 PROGRAM v0506")
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)
 t_Settings(3,2) = "1"
-t_Settings(4,2) = "High investment"
+t_Settings(4,2) = "EU investment boost"
 
 call pCreateScenario(%gm, %alias)
 
@@ -47,17 +47,14 @@ call pCreateScenario(%gm, %alias)
 '==================================================================
 
 smpl %actual+1 %end
-for %b EUP FR ENE
-  '--- investment boost
+'--- except de oeu uk
+for %b fr euc eup
+  '--- investment boost aimed at establishing a minimum
+  '    3% per capita GDP growth rate over a period of time
+  '    with some supporting government services & investmt
   call Floor("IP_" + %b, _
-    "@pc(VVN_" + %b + ")","3",100,100)
+    "@pc(VVN_" + %b + ")","3",100,20)
   call Link("G_" + %b, "IP_" + %b, 0.5)
-  '--- limit monetary inflows to 1% of GDP
-  '    by attracting sufficient direct
-  '    investment and some portfolio investment
-  call Ceiling("ILDI$_" + %b, "100*ILOI$_" _
-    + %b + "/VV$_" + %b,"2",-100,50)
-  call Link("LPI$_" + %b, "ILDI$_" + %b, 0.5)
 next
 
 call Limit (90, "ALL")

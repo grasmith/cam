@@ -11,7 +11,7 @@
 '
 ' select options by adjusting code below before running the program
 '
-' updated: FC 08/05/2013
+' updated: FC 18/09/2014
 '
 '==================================================================
 ' OPTIONS
@@ -24,6 +24,7 @@ include "ztab"
 
 '--- coverage of graphs
 %repgeo = "FO"              'blocs and bloc groups
+%grtab = "No"
 
 '--- range of years
 %repstart = "1980"
@@ -69,7 +70,9 @@ if @upper(@left(%analysis,1)) = "Y" then
 endif
 if @upper(@left(%csv,1)) = "Y" then %tlopt = %tlopt + "C" endif
 if @upper(@left(%markets,1)) = "Y" then %tlopt = %tlopt + "M" endif
+if @upper(@left(%grtab,1)) = "Y" then %tlopt = %tlopt + "D" endif
 !qgraphcomp = @upper(@left(%graphcomp,1)) = "Y"
+
 call pReport(%tlopt,!qgraphcomp)
  
 call pEnd

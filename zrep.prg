@@ -4,7 +4,7 @@
 '
 ' subroutine to create standard outputs
 '
-' updated: FC 11/01/2014
+' updated: FC 18/09/2014
 '
 '================================================
 
@@ -17,6 +17,7 @@ subroutine pReport(string %p_tlOpt, scalar p_qComp)
 '                G world and geo graphs
 '                S world and geo subgraphs
 '                M market graphs
+'                D data tables for graphs
 '                T report tables
 '                C csv files
 '       p_qComp   comparison option - 1 yes, 0 no
@@ -27,9 +28,10 @@ subroutine pReport(string %p_tlOpt, scalar p_qComp)
 '
 ' (i) additional options  %repstart  first year for reports
 '                         %replast   last year for reports
-'                         %repgeo    B,C,O,G,W geo selection
+'                         %repgeo    B,F,G,O,W geo selection
+'                         %grtab     data tables for graphs
 '
-' (ii)solves with the alias defined in t_Settings
+' (ii) series with the alias defined in t_Settings
 '
 '---------------------------------------------------------------
 
@@ -44,6 +46,8 @@ if @len(%tl) > 0 then
 endif
 
 call pLog("generating" + %tl)
+
+!qgrtab = @instr(%p_tlOpt, "D") > 0
 
 '--- list of areas and names
 call ListCol(t_Bloc, 1, nBloc, 1, " ", %areas)
@@ -102,44 +106,33 @@ if @instr(%p_tlOpt, "T") + @instr(%p_tlOpt, "A") > 0 then
   call zRestrict(%tlyr, %first, %last)
 endif
 
+'--- cleanup
+delete gr* sgrb_* ta_* td_* tdb_*
+
 '--- balance checks
 group gp_Balance_check BA$_W{%scAlias} BE$_W{%scAlias} _
   BM$_W{%scAlias} BS$_W{%scAlias} BIT$_W{%scAlias} _
   CA$_W{%scAlias} EB_W{%scAlias} BA0_W{%scAlias} _
   BE0_W{%scAlias} BM0_W{%scAlias} BS0_W{%scAlias}
+freeze(tdb_balance_check) gp_balance_check
 
 '--- create bloc analysis tables
 if @instr(%p_tlOpt, "A") >0 then
   statusline Analysis tables
   '--- cleanup
-  pageselect tables
-  delete ta_*
-  pageselect data
-  delete ta*
+  delete tables\ta_*
   '--- create tables and transfer them to the tables page
   call ATable("ta", %scTitle, %scAlias, %areas, _
     %names, %tlyr)
+  delete ta*
 endif
 
 '--- create world and bloc graphs and tables
 if @instr(%p_tlOpt, "G")>0 or _
    @instr(%p_tlOpt, "T")>0 then
-
-  '--- cleanup
-  if @instr(%p_tlOpt, "G") > 0 then
-    pageselect graphs
-    delete gr_* grb_* sgrb_*
-    pageselect data
-  endif  
-  if @instr(%p_tlOpt, "T") > 0 then
-    freeze(tb_balance_check) gp_balance_check
-    pageselect tables
-    delete tb_* td_* tdb_*
-    copy data\tb_balance_check
-    pageselect data
-    delete tb_balance_check
-  endif  
-
+  '--- clear graph data tables 
+  delete tables\gr*
+  
   call pLog("world results")
   for !i = 1 to nWRep
     %gtc = t_WRep(!i, 5)
@@ -155,7 +148,7 @@ if @instr(%p_tlOpt, "G")>0 or _
       endif
       call MultiGraph(%g, t_WRep(!i, 2), %tt, %tlv, _
         t_WRep(!i, 4), t_WRep(!i, 6), t_WRep(!i, 7), _
-        0, %first, %last, t_Settings(13,2))
+        0, %first, %last, t_Settings(13,2), !qgrtab)
     endif
     '--- tables
     if @instr(%p_tlOpt, "T")> 0 and @instr(%gtc, "T") > 0 then 
@@ -204,7 +197,7 @@ if @instr(%p_tlOpt, "G")>0 or _
         call ListGeo(%geo, 1, %tlgeo)
         call BlocGraph(%g, %t, %tlgeo, %tlv1, %tt, _
           t_BRep(!i, 4), t_BRep(!i, 5), _
-          0, %first, %last, t_Settings(13,2))
+          0, %first, %last, t_Settings(13,2), !qgrtab)
       next
     endif
     '--- tables
@@ -224,9 +217,7 @@ endif
 '--- market share graphs
 if @instr(%p_tlOpt, "M") then
   call pLog("market shares")
-  pageselect graphs
-  delete grm_* grs_* grx_*
-  pageselect data
+  delete graphs\grm_* graphs\grs_* graphs\grx_*
   '--- graphs of market shares by supplier
   for !j = 1 to nBloc
     %p = t_Bloc(!j, 1)
@@ -243,7 +234,7 @@ if @instr(%p_tlOpt, "M") then
     %v = "sxm_?_" + %p + %scAlias
     %tt = "Shares of " + t_Bloc(!j, 2) + _
       "'s market for imported manufactures"
-    call BlocStack(%g , %v, %tlb, %tt, %first, %last)
+    call BlocStack(%g , %v, %tlb, %tt, %first, %last, !qgrtab)
   next
   
   '--- graphs of change in competitiveness
@@ -286,35 +277,23 @@ if @instr(%p_tlOpt, "M") then
     %v = "smx_" + %b + "_?" + %scAlias
     %tt = "Share of " + t_Bloc(!j, 2) + _
       "'s exports of manufactures by destination"
-    call BlocStack(%g , %v, %tlp, %tt, %first, %last)
+    call BlocStack(%g , %v, %tlp, %tt, %first, %last, !qgrtab)
   next
 endif
 
 '--- move outputs to graphs or tables page
-if @instr(%p_tlOpt, "G") > 0 then
-  pageselect graphs
-  copy data\gr*
-  if @instr(%p_tlOpt, "S") > 0 then copy data\sgr* endif
-  pageselect data
+if @instr(%p_tlOpt, "G") > 0 or @instr(%p_tlopt, "M") > 0 then
+  copy gr* graphs\gr*
+  if @instr(%p_tlOpt, "S") > 0 then
+    copy sgr* graphs\sgr*
+  endif
   delete gr* sgr*
-endif  
+endif
 if @instr(%p_tlOpt, "T") > 0 then
-  pageselect tables
-  copy data\td_*
-  copy data\tdb_*
-  pageselect data
+  copy td_* tables\td_*
+  copy tdb_* tables\tdb_*
   delete td_* tdb_*
 endif  
-if @instr(%p_tlopt, "M") > 0 then
-  pageselect graphs
-  copy data\grm_*
-  copy data\grs_*
-  copy data\grx_*
-  pageselect data
-  delete grm_* grs_* grx_*
-endif
-
-pageselect data
 
 endsub
 
