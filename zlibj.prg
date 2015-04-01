@@ -15,7 +15,9 @@
 'include "set"
 include "zlibp"
 
+
 ' Example call
+mode quiet
 'call mk_extra_graphs("eb; Austerity: ef; Federal")
 
 subroutine mk_extra_graphs(string %p_scenario_list)
@@ -47,7 +49,8 @@ subroutine mk_single_graphs(string %p_tlScenario, string %p_Page)
 
 ' -- Europe
 %p_grp_code = "EU"
-%bloc_list = "EUC FR EUP ENC UK ENE"
+'%bloc_list = "EUC FR EUP ENC UK ENE"
+%bloc_list = "EUC FR EUP UK"
 
 '-- GDP and components
 
@@ -163,7 +166,7 @@ call SPGraph(%p_Page, %p_grp_code + "_govt_deficit_abs", _
 '  "European Federal debt" _
 '    + "\n(% EU GDP)", _
 '  %color, %font,%bloc_list,"e2f; Federal Europe",%p_tlyear,3, _
-'  ";;0;@nan(100*(eu_lg+eu_lg2)/eu_y$,0):" _
+'  ";;0;@nan(100*(eu_lg_eup_ef)/eu_y$,0):" _
 '  )
 
 'call SPGraph(%p_Page, %p_grp_code + "_federal_deficit", _
@@ -214,6 +217,48 @@ call SPGraph(%p_Page, %p_grp_code + "_bond_rate_n", _
   )
 
 
+call SPGraph(%p_Page, %p_grp_code + "_inflation_costs", _
+  "cost inflation" _
+    + "\n(%)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;pi_?:" _
+  )
+
+call SPGraph(%p_Page, %p_grp_code + "_inflation_prices", _
+  "price inflation" _
+    + "\n(%)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;pvi_?:" _
+  )
+
+call SPGraph(%p_Page, %p_grp_code + "_inflation_earnings", _
+  "earnings inflation" _
+    + "\n(%)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;ei_?:" _
+  )
+
+call SPGraph(%p_Page, %p_grp_code + "_mark_up", _
+  "markup" _
+    + "\n(%)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;mu_?:" _
+  )
+
+call SPGraph(%p_Page, %p_grp_code + "y_wage_share", _
+  "wage share" _
+    + "\n(%)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;VVEMV_?:" _
+)
+
+call SPGraph(%p_Page, %p_grp_code + "y_profit_share", _
+  "profit share" _
+    + "\n(%)", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;VVPRV_?:" _
+  )
+
 series ILGADJ_EUC_eb = 0
 series ILGADJ_FR_eb = 0
 series ILGADJ_EUP_eb = 0
@@ -263,9 +308,17 @@ call SPGraph(%p_Page, %p_grp_code + "_three_bals", _
 
 call SPGraph(%p_Page, %p_grp_code + "_real_exchange_rate", _
   "real exchange rate" _
-    + "\n(% GDP)", _
+    + "\n", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";;0;rx_?:" _
+  )
+
+
+call SPGraph(%p_Page, %p_grp_code + "_nom_exchange_rate", _
+  "nominal exchange rate" _
+    + "\n", _
+  %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
+  ";;0;rxd_?:" _
   )
 
 ' Quickly generate RX series against USD
