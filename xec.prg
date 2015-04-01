@@ -22,8 +22,8 @@ include "est"
 include "sola"
 include "sol0p"
 include "sol0"
-include "sol1"
-include "sol2"
+'include "sol1"
+'include "sol2"
 
 '--- execute programs
 call dat
@@ -31,5 +31,5 @@ call est
 call sola
 call sol0p
 call sol0
-call sol1
-call sol2
+'call sol1
+'call sol2
