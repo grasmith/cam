@@ -96,6 +96,11 @@ YGD_ENE_ins=-0.02
 'Slowdown in Energy demand China
 ED_CN_ins=-0.05
 
+' Euro depreciation (due to QE?)
+
+'rxu_EUC_ins = -0.1
+'call Target("rxu_EUC", "rx_EUC/rx_US", "1.10", 1, 90)
+
 call Limit (99, "ALL")
 
 '==================================================================
@@ -108,5 +113,3 @@ call pCheckSolveReport({%gm}, %actual, %actual, %predict, _
 call pEnd
 
 endsub
-
-
