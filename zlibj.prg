@@ -35,13 +35,22 @@ pageselect data
 call mk_single_graphs(%p_scenario_list, %p_page_name)
 endsub
 
+
+subroutine save_graph(string %p_page, string %p_graph_name)
+
+pageselect {%p_page}
+{%p_graph_name}.save(t=png, u=in, w=5, d=300) %p_graph_name
+pageselect data
+endsub
+
 subroutine mk_single_graphs(string %p_tlScenario, string %p_Page)
 '==================================================================
 ' -- Generate sequence of graphs, each on a single pane
 ' Call: %p_scenario_list    list of scenario codes and names
 '       %p_Page             name of workfile page to save graphs onto
 
-%p_tlyear = "1980 2030 2015"
+'%p_tlyear = "1980 2025 2015"
+%p_tlyear = "1980 2025 2015"
 
 %font = "28"
 %color = %blyellow
@@ -61,6 +70,7 @@ call SPGraph(%p_Page, %p_grp_code + "_gdp_growth", _
   ";;0;DV0_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_gdp_growth")
 
 call SPGraph(%p_Page, %p_grp_code + "_consumption", _
   "consumption" _
@@ -69,12 +79,16 @@ call SPGraph(%p_Page, %p_grp_code + "_consumption", _
   ";;0;CV_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_consumption")
+
 call SPGraph(%p_Page, %p_grp_code + "_investment_private", _
   "investment" _
     + "\n(% GDP)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";10,30;0;IPV_?:" _
   )
+
+call save_graph(%p_Page, %p_grp_code + "_investment_private")
 
 call SPGraph(%p_Page, %p_grp_code + "_investment_growth", _
   "investment growth" _
@@ -83,12 +97,16 @@ call SPGraph(%p_Page, %p_grp_code + "_investment_growth", _
   ";;0;@dlog(IPV_?):" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_investment_growth")
+
 call SPGraph(%p_Page, %p_grp_code + "_current_acct", _
   "current account balance" _
     + "\n(% GDP)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";;0;CAV$_?:" _
   )
+
+call save_graph(%p_Page, %p_grp_code + "_current_acct")
 
 call SPGraph(%p_Page, %p_grp_code + "_current_acct_trade", _
   "trade balance" _
@@ -97,6 +115,8 @@ call SPGraph(%p_Page, %p_grp_code + "_current_acct_trade", _
   ";;0;100*TB$_?/(V_?*rx_?):" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_current_acct_trade")
+
 call SPGraph(%p_Page, %p_grp_code + "_govt_expenditure", _
   "government spending" _
     + "\n(% GDP)", _
@@ -104,12 +124,17 @@ call SPGraph(%p_Page, %p_grp_code + "_govt_expenditure", _
   ";;0;GV_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_govt_expenditure")
+
 call SPGraph(%p_Page, %p_grp_code + "_govt_exp_growth", _
   "growth in government spending" _
     + "\n(% pa)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";;0;@dlog(G_?):" _
   )
+
+call save_graph(%p_Page, %p_grp_code + "_govt_exp_growth")
+
 '-- Govt finance
 
 series YGADJ_EUC_eb = 0
@@ -130,6 +155,7 @@ call SPGraph(%p_Page, %p_grp_code + "_govt_income", _
   ";;0;YGV_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_govt_income")
 
 call SPGraph(%p_Page, %p_grp_code + "_govt_inc_fed", _
   "government income" _
@@ -138,12 +164,16 @@ call SPGraph(%p_Page, %p_grp_code + "_govt_inc_fed", _
   ";;0;YGV_? | (YG_?-YGADJ_?)*100/VV_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_govt_inc_fed")
+
 call SPGraph(%p_Page, %p_grp_code + "_govt_inc_exp", _
   "government income and expenditure" _
     + "\n(% GDP)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";;0;YGV_? govt income|GV_? govt expenditure:" _
   )
+
+call save_graph(%p_Page, %p_grp_code + "_govt_inc_exp")
 
 call SPGraph(%p_Page, %p_grp_code + "_govt_deficit", _
   "government net lending" _
@@ -152,6 +182,7 @@ call SPGraph(%p_Page, %p_grp_code + "_govt_deficit", _
   ";;0;NLGV_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_govt_deficit")
 
 call SPGraph(%p_Page, %p_grp_code + "_govt_deficit_abs", _
   "government net lending" _
@@ -160,7 +191,7 @@ call SPGraph(%p_Page, %p_grp_code + "_govt_deficit_abs", _
   ";;0;NLG_?:" _
   )
 
-
+call save_graph(%p_Page, %p_grp_code + "_govt_deficit_abs")
 
 'call SPGraph(%p_Page, %p_grp_code + "_federal_debt", _
 '  "European Federal debt" _
@@ -198,6 +229,7 @@ call SPGraph(%p_Page, %p_grp_code + "_govt_debt", _
   ";;0;LGV_? | (LG_?-EU_LG_?)*100/V_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_govt_debt")
 
 ' Interest Graph
 'show irm_eus_e2f*lg_eus_e2f(-1)/v_eus_e2f (irm_eus_e2f*(lg_eus_e2f(-1)-eu_lg_eus_e2f(-1)) + (eu_lg_eus_e2f(-1)*2))/v_eus_e2f
@@ -209,6 +241,8 @@ call SPGraph(%p_Page, %p_grp_code + "_bond_rate_r", _
   ";;0;irm_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_bond_rate_r")
+
 call SPGraph(%p_Page, %p_grp_code + "_bond_rate_n", _
   "nominal bond rate" _
     + "\n(%)", _
@@ -216,6 +250,7 @@ call SPGraph(%p_Page, %p_grp_code + "_bond_rate_n", _
   ";;0;im_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_bond_rate_n")
 
 call SPGraph(%p_Page, %p_grp_code + "_inflation_costs", _
   "cost inflation" _
@@ -224,12 +259,16 @@ call SPGraph(%p_Page, %p_grp_code + "_inflation_costs", _
   ";;0;pi_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_inflation_costs")
+
 call SPGraph(%p_Page, %p_grp_code + "_inflation_prices", _
   "price inflation" _
     + "\n(%)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";;0;pvi_?:" _
   )
+
+call save_graph(%p_Page, %p_grp_code + "_inflation_prices")
 
 call SPGraph(%p_Page, %p_grp_code + "_inflation_earnings", _
   "earnings inflation" _
@@ -238,12 +277,16 @@ call SPGraph(%p_Page, %p_grp_code + "_inflation_earnings", _
   ";;0;ei_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_inflation_earnings")
+
 call SPGraph(%p_Page, %p_grp_code + "_mark_up", _
   "markup" _
     + "\n(%)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";;0;mu_?:" _
   )
+
+call save_graph(%p_Page, %p_grp_code + "_mark_up")
 
 call SPGraph(%p_Page, %p_grp_code + "y_wage_share", _
   "wage share" _
@@ -252,12 +295,16 @@ call SPGraph(%p_Page, %p_grp_code + "y_wage_share", _
   ";;0;VVEMV_?:" _
 )
 
+call save_graph(%p_Page, %p_grp_code + "y_wage_share")
+
 call SPGraph(%p_Page, %p_grp_code + "y_profit_share", _
   "profit share" _
     + "\n(%)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";;0;VVPRV_?:" _
   )
+
+call save_graph(%p_Page, %p_grp_code + "y_profit_share")
 
 series ILGADJ_EUC_eb = 0
 series ILGADJ_FR_eb = 0
@@ -277,7 +324,7 @@ call SPGraph(%p_Page, %p_grp_code + "_interest_payments", _
   ";;0;100*(LG_?(-1)*irm_?*0.01)/V_? without RF | 100*((LG_?(-1)*irm_?*0.01)-iLGADJ_?)/V_? with RF:" _
   )
 
-
+call save_graph(%p_Page, %p_grp_code + "_interest_payments")
 
 
 call SPGraph(%p_Page, %p_grp_code + "_govt_iago", _
@@ -297,12 +344,16 @@ call SPGraph(%p_Page, %p_grp_code + "_private_net_lending", _
   ";;0;NLPV_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_private_net_lending")
+
 call SPGraph(%p_Page, %p_grp_code + "_three_bals", _
   "three balances" _
     + "\n(% GDP)", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";;0;NLPV_? private |NLGV_? government |CAV$_? foreign:" _
   )
+
+call save_graph(%p_Page, %p_grp_code + "_three_bals")
 
 ' -- Other
 
@@ -313,6 +364,7 @@ call SPGraph(%p_Page, %p_grp_code + "_real_exchange_rate", _
   ";;0;rx_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_real_exchange_rate")
 
 call SPGraph(%p_Page, %p_grp_code + "_nom_exchange_rate", _
   "nominal exchange rate" _
@@ -320,6 +372,8 @@ call SPGraph(%p_Page, %p_grp_code + "_nom_exchange_rate", _
   %color, %font,%bloc_list,%p_tlScenario,%p_tlyear,3, _
   ";;0;rxd_?:" _
   )
+
+call save_graph(%p_Page, %p_grp_code + "_nom_exchange_rate")
 
 ' Quickly generate RX series against USD
 'series rx$_eus_eb = rx_eus_eb/rx_us_eb
@@ -349,6 +403,7 @@ call SPGraph(%p_Page, %p_grp_code + "_bond_rate", _
   ";;0;irm_?:" _
   )
 
+call save_graph(%p_Page, %p_grp_code + "_bond_rate")
 
 ' -- Employment and dependency
 

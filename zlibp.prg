@@ -174,6 +174,10 @@ call zMergeGraph(%p_Page, %p_Name, %title, %yrsh, _
   p_nCol, %p_Color, %p_Font, %tlgr, %tlLegend, !nLegend, !nSeries, _
   !nTData)
 
+pageselect {%p_Page}
+'{%p_Name}.save(t=png, u=in, w=5, d=300) %p_Name
+pageselect data
+
 endsub
 
 subroutine zCreateDataTable(string %p_TName, string %p_yrs, _
