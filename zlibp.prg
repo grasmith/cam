@@ -1,10 +1,10 @@
-'PROGRAM: zlibp.prg     Copyright (C) 2012,2013 Alphametrics Co. Ltd.
+'PROGRAM: zlibp.prg     Copyright (C) 2012,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2
+' CAM Version 6.0
 '
 ' library functions for presentations
 '
-' updated: FC 25/04/2013
+' updated: FC 23/03/2015
 '
 '   SPGraph     make a graph tableau
 '

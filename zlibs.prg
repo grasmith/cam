@@ -1,10 +1,10 @@
-'LIBRARY: zlibs.prg     Copyright (C) 2012,2013 Alphametrics Co. Ltd.
+'LIBRARY: zlibs.prg     Copyright (C) 2012,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2
+' CAM Version 6.0
 '
 ' model solution routines
 '
-' updated: FC 25/04/2013
+' updated: FC 23/03/2015
 '
 '---------------------------------------------------------------
 ' pCheckSolveReport(p_m, %p_CheckStart, %p_Prior, %p_Horizon,
@@ -109,6 +109,7 @@ if @upper(@left(%tables,1)) = "Y" then %tlopt = %tlopt + "T" endif
 if @upper(@left(%analysis,1)) = "Y" then %tlopt = %tlopt + "A" endif
 if @upper(@left(%csv,1)) = "Y" then %tlopt = %tlopt + "C" endif
 if @upper(@left(%markets,1)) = "Y" then %tlopt = %tlopt + "M" endif
+if @upper(@left(%grtab,1)) = "Y" then %tlopt = %tlopt + "D" endif
 !qgraphcomp = @upper(@left(%graphcomp,1)) = "Y"
 if %tlopt <> "" then call pReport(%tlopt,!qgraphcomp) endif
 

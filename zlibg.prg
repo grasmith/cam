@@ -1,6 +1,6 @@
-'LIBRARY: zlibg.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'LIBRARY: zlibg.prg    Copyright (C) 2012,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2
+' CAM Version 6.0
 '
 ' library routines for graphs
 '
@@ -8,14 +8,14 @@
 ' beginning with lib_ are reserved and should not be used
 ' elsewhere.
 '
-' updated: FC 25/04/2011
+' updated: FC 23/03/2015
 '
 '---------------------------------------------------------------
 ' BlocGraph(%Name, %Title, %List, %Series, %Description, _
-'  %Units, %Scale, nCol, %First, %Last, %EndFit)
-' BlocStack(%Name, %Var, %Blocs, %Title, %First, %Last)
+'  %Units, %Scale, nCol, %First, %Last, %EndFit, qGrTab)
+' BlocStack(%Name, %Var, %Blocs, %Title, %First, %Last, qGrTab)
 ' MultiGraph(%Name, %Title, %Legend, %Series, %Headers, _
-'  %Units, %Scale, nCol, %First, %Last, %Endfit)
+'  %Units, %Scale, nCol, %First, %Last, %Endfit, qGrTab)
 ' Range(group gp, vmin, vmax)
 ' Rename(%Series, %Alias1, %Alias2, %Result)
 '---------------------------------------------------------------
@@ -23,7 +23,7 @@
 subroutine BlocGraph(string %Name, string %Title, _
   string %List, string %Series, string %Description, _
   string %Units, string %Scale, scalar nCol, _
-  string %First, string %Last, string %EndFit)
+  string %First, string %Last, string %EndFit, scalar qGrTab)
 '==================================================
 'Create a composite graph with a separate display for each bloc.
 'The sub-graph for each bloc has the graph name prefixed by s.
@@ -46,6 +46,7 @@ subroutine BlocGraph(string %Name, string %Title, _
 '       %First   first observation
 '       %Last    last observation
 '       %Endfit  latest historical or estimated observation
+'       qGrTab   true to generate a table with the graph data
 '
 ' Note: line colors are selected in reverse order as follows
 '       dark blue, red, green, grey, light blue, violet
@@ -60,8 +61,10 @@ smpl %First %Last
 !lib_nser = 0
 !lib_nsub = 0
 
-'--- loop to make a sub-graph for each bloc
+'--- name of graph
 %lib_gp = "gp_" + %Name
+
+'--- loop to make a sub-graph for each bloc
 %lib_tl = ""
 %lib_tlBloc = %List
 
@@ -150,7 +153,6 @@ else
     !lib_vmin = -999999
   endif
 endif
-delete {%lib_gp}
 
 if !lib_vmin <> -999999 then
   '--- impose the left-hand scale range
@@ -174,6 +176,15 @@ else
   !lib_n = nCol
 endif
 {%lib_g}.align(!lib_n,2,1.5)
+
+'--- create the data table
+if qGrTab then
+  delete lib_tbp*
+  freeze(lib_tbp) {%lib_gp}.sheet
+  copy lib_tbp tables\{%lib_g}
+  delete lib_tbp
+endif
+delete {%lib_gp}
 
 endsub
 
@@ -200,7 +211,8 @@ next
 endsub
 
 subroutine BlocStack(string %Name, string %Var, _
-  string %Blocs, string %Title, string %First, string %Last)
+  string %Blocs, string %Title, string %First, string %Last, _
+  scalar qGrTab)
 '==============================================================
 'create a stacked area chart for bloc series
 '
@@ -210,6 +222,7 @@ subroutine BlocStack(string %Name, string %Var, _
 '       %Title  title for the chart
 '       %First  first observation
 '       %Last   last observation
+'       qGrTab  true to generate a table with the graph data
 '
 ' Ret:
 '
@@ -241,6 +254,14 @@ next
 '--- add the title at the top
 {%Name}.addtext(t) %Title
 
+'--- create the data table
+if qGrTab then
+  delete lib_tbp*
+  freeze(lib_tbp) lib_g.sheet
+  copy lib_tbp tables\{%Name}
+  delete lib_tbp
+endif
+
 '--- drop the pool and group
 delete lib_p
 delete lib_g
@@ -251,7 +272,7 @@ subroutine MultiGraph(string %Name, string %Title, _
   string %Legend, string %Series, _
   string %Headers, string %Units, string %Scale, _
   scalar nCol, string %First, string %Last, _
-  string %Endfit)
+  string %Endfit, scalar qGrTab)
 '==================================================
 'Create a composite graph containing a number of sub-graphs.
 '
@@ -281,6 +302,7 @@ subroutine MultiGraph(string %Name, string %Title, _
 '       %First    first observation
 '       %Last     last observation
 '       %Endfit   latest historical or estimated observation
+'       qGrTab    true to generate a table with the graph data
 '
 ' Uses: t_Bloc    bloc codes and names
 '       nBloc     number of blocs
@@ -381,7 +403,6 @@ else
     !lib_vmin = -999999
   endif
 endif
-delete {%lib_gp}
 
 if !lib_vmin <> -999999 then
   '--- impose the left-hand scale range
@@ -402,6 +423,16 @@ else
   !lib_n = nCol
 endif    
 {%lib_g}.align(!lib_n,1.5,1.5)
+
+'--- create the data table
+if qGrTab then
+  delete lib_tbp*
+  freeze(lib_tbp) {%lib_gp}.sheet
+  copy lib_tbp tables\{%lib_g}
+  delete lib_tbp
+endif
+delete {%lib_gp}
+
 endsub
 
 subroutine local Range(group gp, scalar vmin, scalar vmax)

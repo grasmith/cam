@@ -1,6 +1,6 @@
-'LIBRARY: zlib.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'LIBRARY: zlib.prg   Copyright (C) 2012, 2015 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2
+' CAM Version 6.0
 '
 ' library routines
 '
@@ -8,7 +8,7 @@
 ' beginning with lib_ are reserved and should not be used
 ' elsewhere.
 '
-' updated: FC 11/04/2013
+' updated: FC 23/04/2015
 '
 '---------------------------------------------------------------
 ' Adjusted(%Var, %Name)
@@ -109,16 +109,15 @@ endsub
 
 subroutine AppendIdent(string %p_tl)
 '==================================================
-'Append sets of identities to the model
+'Append sets of identities to the model m_wm
 '
 ' Call: %p_tl  list of specifications
 '
 ' Ret:
 '
 ' Note: specifications are separated by : (colon)
-'   each specification has three fields separated by ;
+'   each specification has two fields separated by ;
 '     scope - B BW W WG G or BWG  (bloc, world and/or group)
-'     model - i (inner) or o (outer)
 '     list of identities separated by blank (space)
 '   an identity may be specified as follows
 '     var         summation over blocs
@@ -137,13 +136,10 @@ subroutine AppendIdent(string %p_tl)
 '---------------------------------------------------------------
 %lib_tl = %p_tl
 '--- loop for multiple specifications
-while 1=1
+while %lib_tl <> ""
   call Token(%lib_tl, ":", %lib_spec)
-  if %lib_spec = "" then exitloop endif
-  '--- extract scope and model
+  '--- extract scope
   call Token(%lib_spec, ";", %lib_scope)
-  call Token(%lib_spec, ";", %lib_model)
-  %lib_model = "m_wm" + %lib_model
   '--- fix range of areas to process
   !lib_is = 1
   !lib_ie = 1
@@ -151,7 +147,7 @@ while 1=1
   '--- area loop
   for !lib_i = !lib_is to !lib_ie
     call zAppendIdent(t_Bloc(!lib_i, 1), t_Bloc(!lib_i, 3), _
-        %lib_model, %lib_spec)
+        "m_wm", %lib_spec)
   next
 wend
 endsub  

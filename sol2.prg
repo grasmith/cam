@@ -1,12 +1,12 @@
-'PROGRAM: sol2.prg    Copyright (C) 2013,2014 Alphametrics Co. Ltd.
+'PROGRAM: sol2.prg    Copyright (C) 2013,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2   EUR variant
+' CAM Version 6.0   FESSUD variant
 '
-' growth and trade boost
+' EU structural policies
 '
-' The program reads SOL0.wf1 and creates SOL2.wf1
+' The program reads SOL1.wf1 and creates SOL2.wf1
 '
-' updated: FC 05/06/2014
+' updated: FC 09/04/2015
 '
 '==================================================================
 ' OPTIONS
@@ -16,11 +16,11 @@ call sol2
 '------------------------------------------------------------------
 subroutine sol2
 
-%actual = "2014"
+%actual = "2015"
 
-%graphs = "Yes"
+%graphs = "No"
 %graphcomp = "No"
-%markets = "Yes"
+%markets = "No"
 %tables = "No"
 %analysis = "No"
 %csv = "No"
@@ -34,7 +34,7 @@ call CreateModelFile("SOL1", %wkfile)
 delete m_wm1
 
 '--- update settings
-call pLog("SOL2 PROGRAM v0506")
+call pLog("SOL1 PROGRAM v0904")
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)
 t_Settings(3,2) = "2"
@@ -48,23 +48,24 @@ call pCreateScenario(%gm, %alias)
 
 smpl %actual+1 %end
 
-
-for %b EUP FR ENE
+'--- except de oeu uk
+for %b fr euc eup
   call DropRules("G_" + %b + " IP_" + %b)
   '--- current a/c target (floor)
   series CAV_{%b}_TAR = -3.5+(@trend-45)*0.14
   '--- growth target
-  call Floor("G_" + %b, _
-    "@pc(VVN_" + %b + ")","3",100,100)
-  call Link("IP_" + %b, "G_" + %b, 1)
-  '--- trade target
+  call Floor("IP_" + %b, _
+    "@pc(VVN_" + %b + ")","3",100,20)
+  call Link("G_" + %b, "IP_" + %b, 1)
+  '--- trade target: mf export mkt share
   call Floor("sxmu_" + %b, _
     "100*CA$_" + %b + "/VV$_" + %b, _
     "CAV_" + %b + "_TAR",50,20)
+  '--- and energy saving
   call Link("ED_" + %b, "sxmu_" + %b, -1) 
 next
 
-call Limit (90, "ALL")
+call Limit (95, "ALL")
 
 '==================================================================
 ' PROCESSING

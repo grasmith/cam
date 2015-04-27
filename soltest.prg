@@ -1,6 +1,6 @@
 'PROGRAM: soltest.prg          Copyright (C) 2013 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2   ASIA variant
+' CAM Version 6.0 utility
 '
 ' Quick baseline (optional)
 '
@@ -10,7 +10,7 @@
 ' The program reads EST.wf1 and creates SOL0.wf1
 ' Simulation results have alias _0
 ' 
-' updated: FC 30/05/2014
+' updated: FC 08/03/2013
 ' 
 '==================================================================
 ' OPTIONS
@@ -35,7 +35,7 @@ mode quiet
 call CreateModelFile("EST", %wkfile) 
 
 '--- update settings
-call pLog("SOLTEST PROGRAM v3005")
+call pLog("SOLTEST PROGRAM v0803")
 t_Settings(3,2) = "0"
 t_Settings(4,2) = "Baseline"
 
@@ -59,8 +59,9 @@ call pCreateScenario(%gm, %alias)
 %actual = t_Settings(1,2)
 smpl %actual+1 %end
 
-call Target("rxu_one", "rxna_one-rxna_de", "0", 100, 100)
-call Target("rxu_eus", "rxna_eus-rxna_de", "0", 100, 100)
+call Target("rxu_fr", "rxna_fr-rxna_de", "0", 100, 100)
+call Target("rxu_euc", "rxna_euc-rxna_de", "0", 100, 100)
+call Target("rxu_eup", "rxna_eup-rxna_de", "0", 100, 100)
 call Limit (100, "ALL")
 
 '==================================================================

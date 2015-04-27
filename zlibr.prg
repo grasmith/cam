@@ -1,6 +1,6 @@
-'PROGRAM: zlibr.prg          Copyright (C) 2012,2014 Alphametrics Co. Ltd.
+'PROGRAM: zlibr.prg  Copyright (C) 2012,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2
+' CAM Version 6.0
 '
 ' library routines for scenario rules
 '
@@ -8,7 +8,7 @@
 ' beginning with lib_ are reserved and should not be used
 ' elsewhere.
 '
-' updated: FC 11/01/2014
+' updated: FC 23/03/2015
 '
 '---------------------------------------------------------------
 '
@@ -638,7 +638,7 @@ subroutine local zAddRule(table tRule, scalar nRule, _
 '==============================================================
 'add a rule to the rule table
 '
-' Call: tRule   table name
+' Call: tRule   rule table
 '       nRule   number of rows in the table
 '       %Var    behavioural variable modified by the rule
 '       %Action type of rule
@@ -656,10 +656,10 @@ subroutine local zAddRule(table tRule, scalar nRule, _
 '
 '---------------------------------------------------------------
 !i = nRule + 1
-tRule(!i,1) = %Var
+tRule(!i,1) = @upper(%Var)
 tRule(!i,2) = %Action
-tRule(!i,3) = %Expression
-tRule(!i,4) = %Value
+tRule(!i,3) = @upper(%Expression)
+tRule(!i,4) = @upper(%Value)
 tRule(!i,5) = @str(vSens)
 tRule(!i,6) = @str(vPCT)            'how close
 tRule(!i,7) = ""                    'limit
@@ -679,6 +679,9 @@ subroutine local InsToAddFactors(model m, table tRule, _
 '
 ' Ret:
 '
+' Note: adds ins to existing add factors if any
+'       and zeroes ins
+'
 '---------------------------------------------------------------
 scalar q = 0
 call pLog("converting ins to add factors")
@@ -692,12 +695,14 @@ for !i = 1 to nRule
       %s = %v + "_" + %b
       call Exists(%s, q)
       if q then
-        call CreateSeries(%s + "_a = " + %v + "_ins")
+        %s = %s + "_a"
+        call CreateSeries(%s + "=@nan("+%s+",0)+" + %v + "_ins")
       endif
     next
   '--- other instrument adjustments match a single variable
   else
-    call CreateSeries(%v + "_a = " + %v + "_ins")
+    %s = %v + "_a"
+    call CreateSeries(%s + "=@nan("+%s+",0)+" + %v + "_ins")
   endif
   call CreateSeries(%v + "_ins = 0")
 next
@@ -977,12 +982,13 @@ for !ip = 1 to nRule
     if @instr("CeilingFloorTargetTry", tRule(!ip,2)) > 0 _
         and tRule(!ip,5) = "0" then
       '--- create shock scenario
-      m.scenario(n,a=s) Shock
       call pLog("Modelling shock for " + %v)
+      m.scenario(n,a=s) Shock
       call SetShockGroup(tRule, nRule, !ip, %first, %pr)
       smpl %first %last
       mode verbose
-      m.solve(i=p,m=10000)
+      m.solve(m=1000)
+      m.scenario(d) Shock
       t_Settings(8,2) = "RULECHECK: " + %v + "::" + %pr
       mode quiet
       table t
@@ -992,7 +998,6 @@ for !ip = 1 to nRule
       print t
       delete t n
       call ClearShockGroup(tRule, nRule, !ip, %First)
-      m.scenario(d) Shock
       delete *_s
     endif
   endif

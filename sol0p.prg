@@ -1,16 +1,16 @@
-'PROGRAM: sol0p.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: sol0p.prg          Copyright (C) 2013 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2
+' GPM version 6.0
 '
-' Initial baseline projection
+' baseline projection (plain version)
 '
 ' Run this program after sola.prg (alignment).
-' It gives a plain projection of the model that should be
-' examined before defining the baseline in sol0.prg
+' It gives a plain projection of the model that should be examined
+' before defining the baseline in sol0.prg
 '
 ' The program reads SOLA.wf1 and creates SOL0P.wf1
 '
-' updated: FC 15/04/2012
+' updated: FC 22/03/2013
 '
 '==================================================================
 ' OPTIONS
@@ -38,7 +38,7 @@ call CreateModelFile("SOLA", %wkfile)
 delete m_wma t_Rule* nRule*
 
 '--- update settings
-call pLog("SOL0P PROGRAM v1504")
+call pLog("SOL0P PROGRAM v2203")
 t_Settings(3,2) = "0p"
 t_Settings(4,2) = "plain baseline"
 
@@ -48,17 +48,17 @@ call pCreateScenario(%gm, %alias)
 ' DEFINITIONS
 '==================================================================
 
-'--- last actual from alignment
+'--- last available from alignment
 '    plain baseline starts after this year
-%actual = t_Settings(1,2)
+%latest = t_Settings(2,2)
 
-smpl %actual+1 %end
+smpl %latest+1 %end
 
 '==================================================================
 ' PROCESSING
 '==================================================================
-call pCheckSolveReport({%gm}, %actual, %actual, %predict, _
-  "m=10000", 8)
+call pCheckSolveReport({%gm}, %latest, %latest, %predict, _
+  "m=1000", 8)
 call pEnd
 
 endsub

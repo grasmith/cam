@@ -1,6 +1,6 @@
-'PROGRAM: zimpact.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: zimpact.prg Copyright (C) 2012,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2
+' CAM Version 6.0
 '
 ' subroutine to generate a dynamic multiplier report
 '
@@ -8,7 +8,7 @@
 ' beginning with lib_ are reserved and should not be used
 ' elsewhere.
 '
-' updated: NK 15/09/2010
+' updated: FC 04/04/2013
 '
 '---------------------------------------------------------------
 

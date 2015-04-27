@@ -1,6 +1,6 @@
-'PROGRAM: report.prg          Copyright (C) 2012 Alphametrics Co. Ltd.
+'PROGRAM: report.prg      Copyright (C) 2010,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2
+' CAM Version 6.0 utility
 '
 ' program to create reports
 '
@@ -11,7 +11,7 @@
 '
 ' select options by adjusting code below before running the program
 '
-' updated: FC 08/05/2013
+' updated: FC 23/03/2015
 '
 '==================================================================
 ' OPTIONS
@@ -23,7 +23,8 @@ include "ztab"
 '------------------------------------------------------------------
 
 '--- coverage of graphs
-%repgeo = "FO"              'blocs and bloc groups
+%repgeo = "FGO"                  'blocs and bloc groups
+%grtab = "No"
 
 '--- range of years
 %repstart = "1980"
@@ -34,13 +35,13 @@ include "ztab"
 '    the alias and title for copied data may not be blank and must
 '    differ from the alias and title of main data in the target
 '%wfComp = "SOLA"                     'source workfile or blank
-'%scCompare = "c"                       'alias in target workfile
-'%scCompTitle = "Alignment"          'title in target workfile
+'%scCompare = "c"                     'alias in target workfile
+'%scCompTitle = "Alignment"           'title in target workfile
 
 '--- output options
 %graphs = "Yes"
 '--- comparison graphs (if not Y, graph main data only)
-%graphcomp = "No"
+%graphcomp = "Yes"
 %markets = "Yes"
 %tables = "No"
 %analysis = "No"
@@ -50,7 +51,7 @@ include "ztab"
 pageselect data
 output(s) sp_log
 show sp_log
-call pLog("REPORT PROGRAM v2910")
+call pLog("REPORT PROGRAM v2303")
 
 if %wfComp <> "" then
   call pLoadComparison(%wfComp, %scCompare, %scCompTitle)
@@ -69,7 +70,9 @@ if @upper(@left(%analysis,1)) = "Y" then
 endif
 if @upper(@left(%csv,1)) = "Y" then %tlopt = %tlopt + "C" endif
 if @upper(@left(%markets,1)) = "Y" then %tlopt = %tlopt + "M" endif
+if @upper(@left(%grtab,1)) = "Y" then %tlopt = %tlopt + "D" endif
 !qgraphcomp = @upper(@left(%graphcomp,1)) = "Y"
+
 call pReport(%tlopt,!qgraphcomp)
  
 call pEnd

@@ -1,13 +1,13 @@
-'PROGRAM: set.prg          Copyright (C) 2014 Alphametrics Co. Ltd.
+'PROGRAM: set.prg          Copyright (C) 2015 Alphametrics Co. Ltd.
 '
-' CAM Version 5.2 EUR variant
+' CAM Version 6.0 FESSUD variant
 '
 ' settings
 '
 ' this program fragment is included in all executable programs
 ' it initialises the system and provides common settings
 '
-' updated: FC 05/06/2013
+' updated: FC 17/04/2015
 '
 '=======================================================
 
@@ -23,70 +23,84 @@ include "zrep"
 include "zimpact"
 
 '--- title for reports
-%sysTitle = "CAM 5.2 with ASIA blocs"
+%sysTitle = "CAM 6.0 with FESSUD blocs"
 
 '--- data source (historical series)
-!nSeries = 3008
+!nSeries = 2940
 
 '--- default simulation horizon
 %predict = "2030"
 '--- start year for simulation charts and reports
-%repstart = "1980"
+%repstart = "2000"
 '--- columns in simulation tables
 %yrsol = "2000 2008 2010 2011 2012 2015 2020 2030"
 
 '--- historical data and alignment periods
 %start = "1970"               ' first year of historical data
 %base = "2005"                ' base year
-%latest = "2012"              ' latest historical data
-%align = "2014"               ' default alignment horizon
+%latest = "2013"              ' latest historical data
 %end    = "2030"              ' end of workfile
 
 '--- columns in history and alignment tables
-%yrdat = "1980 1990 2000 2008 2009 2010 2011 2012"
-%yrext = "1990 2000 2008 2009 2010 2011 2012 2014"
+%yrdat = "2000 2007 2009 2010 2011 2012 2013"
+%yrext = "2000 2007 2009 2012 2013 2014 2015"
 
 '--- graph coverage
 '    B blocs, F first blocs, O other blocs,
 '    G groups, W world
-%repgeo = "FO"
+%repgeo = "FOG"
 %subgraphs = "No"
+'--- tables with data from graphs to be generated
+'    on the tables page with same names as the graphs
+%grtab = "No"
+
+'--- bloc charts can be displayed in two groups
+'    F first and O other (the rest)
+'    this parameter selects the number of blocs in the
+'    first group counting from the top of the list
+!nFirstBlocs = 6
 
 '--- blocs
-!nFirstBlocs = 6
 %blocs = "" _
-  + "euc;Core eurozone:" _
+  + "de;Germany:" _
   + "fr;France:" _
+  + "uk;UK:" _
+  + "euc;Core eurozone:" _
   + "eup;Eurozone periphery:" _
-  + "enc;North Europe non-euro:" _
-  + "uk;United Kingdom:" _
-  + "ene;East Europe non-euro:" _
-  + "tr;Turkey:" _
-  + "cis;CIS and other:" _
-  + "nwa;North Africa and West Asia:" _
-  + "afl;Africa Low Income:" _
-  + "za;South Africa:" _
-  + "in;India:" _
-  + "osa;Other South Asia:" _
-  + "cn;China:" _
-  + "ja;Japan:" _
-  + "oeh;Other East Asia High Income:" _
-  + "oea;Other East Asia:" _
-  + "can;Canada,Australia,New Zealand:" _
+  + "oeu;Other Europe:" _
   + "us;USA:" _
-  + "acx;Central America and Caribbean:" _
+  + "cn;China:" _
+  + "in;India:" _
   + "br;Brazil:" _
+  + "id;Indonesia:" _
+  + "za;South Africa:" _
+  + "tr;Turkey:" _
+  + "ru;Russia:" _
+  + "can;Canada,Australia,New Zealand:" _
+  + "oeh;Other East Asia High Income:" _
+  + "nwa;North Africa and Other West Asia:" _
+  + "acx;Central America and Caribbean:" _
   + "oam;Other South America:" _
-  + ""
+  + "oca;Other Central Asia:" _
+  + "oea;Other East Asia:" _
+  + "osa;Other South Asia:" _
+  + "oaf;Other Africa:"
 
-'--- bloc aggregates
+'--- groups of blocs: change as required
+'    the groups can overlap (a bloc can be in
+'    more than one group) 
 %groups = "" _
- + "EU;Europe;euc fr eup enc uk ene:" _
- + "CMEA;CIS, Middle East and Africa;" _
-    + "cis tr nwa afl za:" _
- + "ROA;Rest of Asia;" _
-    + "ja cn oeh oea in osa:" _
- + "RAM;America;" _
-    + "can us acx br oam:" _
- + ""
+ + "BRICS; BRICS;" _
+    + "br ru in cn za:" _
+ + "EUR; Europe;" _
+    + "de fr uk euc eup oeu:" _
+ + "ROW;Rest of world;" _
+    + "id tr us can oeh nwa acx oam oea osa oaf:" _
+ + "OHI;Other high income;" _
+    + "us oeh can:" _
+ + "OMI;Other middle income;" _
+    + "tr oca nwa acx oam:" _
+ + "OLI;Other low income;" _
+    + "id oea osa oaf:"
+
 '=======================================================
