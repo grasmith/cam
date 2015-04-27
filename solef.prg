@@ -15,8 +15,9 @@ call solEf
 subroutine solEf
 
 %actual = "2014"
+%predict = "2025"
 
-%graphs = "No"
+%graphs = "Yes"
 %graphcomp = "No"
 %markets = "No"
 %tables = "No"
@@ -50,10 +51,10 @@ smpl %actual+1 %end
 call DropRules("G_EUC G_FR G_EUP G_ENC G_UK")
 call DropRules("IP_EUC IP_FR IP_EUP IP_ENC IP_UK")
 
-IP_EUC_ins = 0
-IP_FR_ins = 0
-IP_ENC_ins = 0
-IP_EUP_ins = 0
+'IP_EUC_ins = 0
+'IP_FR_ins = 0
+'IP_ENC_ins = 0
+'IP_EUP_ins = 0
 
 ' ---- Reduction in government income
 YGD_FR_ins=-0.00
@@ -102,6 +103,9 @@ IP_EUP_ins.fill(s) 0, 0, 0, 0.01, 0.01, 0.02, 0.03, 0.04, 0.04, 0.04
 IP_FR_ins=0.06
 IP_FR_ins.fill(s) 0, 0, 0, 0.01, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06
 
+G_EUP_ins=0.03
+IP_EUP_ins.fill(s) 0, 0, 0, 0.01, 0.01, 0.02, 0.03 ', 0.04, 0.04, 0.04
+
 ' ' UK Exchange rate devaluation
  call Target("rxu_UK", "rx_UK/rx_US", "0.80", 1, 10)
 
@@ -118,8 +122,8 @@ call Ceiling("ei_EUP", "irm_EUP", "2.0", 0, 90)
 call Ceiling("ei_ENC", "irm_ENC", "1.5", 0, 90)
 call Ceiling("ei_ENE", "irm_ENE", "3.0", 0, 90)
 
-
-
+rxu_EUC_ins = -0.05
+rxu_EUC_ins.fill(s) -0.2, -0.15, -0.1, -0.8, -0.6
 
 
 call Limit (95, "ALL")
