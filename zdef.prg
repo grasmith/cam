@@ -1,10 +1,10 @@
 'PROGRAM: zdef.prg      Copyright (C) 2012,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 6.0
+' CAM Version 6.1
 '
 ' program segment to build the core model
 '
-' updated: FC 21/04/2015
+' updated: FC 1/05/2015
 '
 '=====================================================================
 subroutine pDefineModel
@@ -24,7 +24,6 @@ for !j = 1 to nEq
   %var = t_Eq(!j,2)
   if %var <> "sxm" then m_wm.append :p_{%var} endif
 next
-
 '--- world price of primary commodities
 m_wm.append :eq_pa_w
 
@@ -244,8 +243,8 @@ call AppendIdent( _
 
 call AppendIdent( _
   "B;" _
-  + "YG_?=YGD_?+VVTX_? " _
-  + "NLG_?=YG_?-G_?+NLGADJ_? " _
+  + "YG_?=YGR_?-YGTI_? " _
+  + "NLG_?=YG_?-G_? " _
 + ":B;" _
   + "slgx_?=1-log(1+YR_?)/2 " _
   + "rplgo_?=slgx_?*ph_?(-1)/ph_?+(1-slgx_?)*rpfa_? " _

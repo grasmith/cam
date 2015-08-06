@@ -338,7 +338,7 @@ if %lib_mem = "" then
     vSE = eq_{%lib_root}.@se
   endif
 else
-  if %lib_root = "sxmu" then
+  if @upper(%lib_root) = "SXMU" then
     vSE = p_{%Var}.@se
   else
     %lib_s = "p_" + %lib_root
@@ -688,7 +688,7 @@ call pLog("converting ins to add factors")
 for !i = 1 to nRule
   %v = tRule(!i,1)
   '--- special processing for sxmu bloc-level adjuster
-  if @left(%v,5) = "sxmu_" and @len(%v) < 10 then
+  if @upper(@left(%v,5)) = "SXMU_" and @len(%v) < 10 then
     '--- one add factor for each partner bloc
     for !j = 1 to nBloc
       %b = tBloc(!j, 1)
@@ -696,7 +696,8 @@ for !i = 1 to nRule
       call Exists(%s, q)
       if q then
         %s = %s + "_a"
-        call CreateSeries(%s + "=@nan("+%s+",0)+" + %v + "_ins")
+        call CreateSeries(%s + "=@nan("+%s+",0)+" _
+          + %v + "_ins")
       endif
     next
   '--- other instrument adjustments match a single variable

@@ -1,6 +1,6 @@
 'PROGRAM: est.prg     Copyright (C) 2012,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 6.0
+' CAM Version 6.1
 '
 ' estimation of behavioural equations
 '
@@ -12,7 +12,7 @@
 ' you can get different types of estimation output by
 ' switching on options listed below
 '
-' updated: FC 23/03/2015
+' updated: FC 01/05/2015
 '
 '==================================================================
 ' OPTIONS
@@ -53,7 +53,7 @@ pageselect data
 delete gp_gr* sp_log*
 
 '--- update settings
-call pLog("EST PROGRAM v2303")
+call pLog("EST PROGRAM v0105")
 %wkfile = "EST"
 t_Settings(7,2) = %wkfile
 wfsave {%wkfile}
@@ -121,6 +121,7 @@ call AddEquation(%blocs, _
   + "dlog(NLNVF_?) = " _
   + "error correction:c*log(NLNVF_?(-1));" _
   + "ageing:c*NOF_?/NVF_?;" _
+  + "increase in transfers:c*d(YGTI_?/VV_?);" _
   + "urbanisation:c*NUR_?/N_?")
 
 call AddEquation(%blocs, _
@@ -128,6 +129,7 @@ call AddEquation(%blocs, _
   + "dlog(NLNVM_?) = " _
   + "error correction:c*log(NLNVM_?(-1));" _
   + "ageing:c*NOM_?/NVM_?;" _
+  + "increase in transfers:c*d(YGTI_?/VV_?);" _
   + "urbanisation:c*NUR_?/N_?")
 
 call AddEquation(%blocs, _
@@ -135,6 +137,7 @@ call AddEquation(%blocs, _
   + "dlog(NLNYF_?) = " _
   + "error correction:c*log(NLNYF_?(-1));" _
   + "no of children:c*NCP_?/N_?;" _
+  + "increase in transfers:c*d(YGTI_?/VV_?);" _
   + "urbanisation:c*NUR_?/N_?")
 
 call AddEquation(%blocs, _
@@ -142,6 +145,7 @@ call AddEquation(%blocs, _
   + "dlog(NLNYM_?) = " _
   + "error correction:c*log(NLNYM_?(-1));" _
   + "no of children:c*NCP_?/N_?;" _
+  + "increase in transfers:c*d(YGTI_?/VV_?);" _
   + "urbanisation:c*NUR_?/N_?")
  
 call AddEquation(%blocs, "NULVF female unemployment rate 25+;-;" _
@@ -149,6 +153,7 @@ call AddEquation(%blocs, "NULVF female unemployment rate 25+;-;" _
   + "error correction:c*-log(50/(0.1+NULVF_?(-1))-1);" _
   + "labour force growth:c*dlog(NVF_?(-1));" _
   + "GDP growth:c*log(VVN_?(-1))*dlog(V_?);" _
+  + "government services:c*G_?/VV_?;" _
   + "lagged GDP growth:c*log(VVN_?(-1))*dlog(V_?(-1));" _
   + "fixed investment growth:c*log(VVN_?(-1))*dlog(IP_?);" _
   + "global inventories:c*IV_W/V_W;" _
@@ -159,6 +164,7 @@ call AddEquation(%blocs, "NULVM male unemployment rate 25+;-;" _
   + "error correction:c*-log(35/(0.1+NULVM_?(-1))-1);" _
   + "labour force growth:c*dlog(NVM_?(-1));" _
   + "GDP growth:c*log(VVN_?(-1))*dlog(V_?);" _
+  + "government services:c*G_?/VV_?;" _
   + "lagged GDP growth:c*log(VVN_?(-1))*dlog(V_?(-1));" _
   + "fixed investment growth:c*log(VVN_?(-1))*dlog(IP_?);" _
   + "global inventories:c*IV_W/V_W;" _
@@ -168,6 +174,7 @@ call AddEquation(%blocs, "NULYF female unemployment rate 15-24;-;" _
   + "-dlog(90/(0.1+NULYF_?)-1) = " _
   + "error correction:c*-log(90/(0.1+NULYF_?(-1))-1);" _
   + "GDP growth:c*log(VVN_?(-1))*dlog(V_?);" _
+  + "government services:c*G_?/VV_?;" _
   + "lagged GDP growth:c*log(VVN_?(-1))*dlog(V_?(-1));" _
   + "fixed investment growth:c*log(VVN_?(-1))*dlog(IP_?);" _
   + "global inventories:c*IV_W/V_W;" _
@@ -180,6 +187,7 @@ call AddEquation(%blocs, "NULYM male unemployment rate 15-24;-;" _
   + "-dlog(70/(0.1+NULYM_?)-1) = " _
   + "error correction:c*-log(70/(0.1+NULYM_?(-1))-1);" _
   + "GDP growth:c*log(VVN_?(-1))*dlog(V_?);" _
+  + "government services:c*G_?/VV_?;" _
   + "lagged GDP growth:c*log(VVN_?(-1))*dlog(V_?(-1));" _
   + "fixed investment growth:c*log(VVN_?(-1))*dlog(IP_?);" _
   + "global inventories:c*IV_W/V_W;" _
@@ -262,32 +270,24 @@ call AddEquation(%blocs, "rtx Indirect taxes less subsidies;-;" _
   + "change in energy exports:" _
     + "c*d(XE$_?/(rx_?*VV_?))")
 
-
-smpl %start %end
-p_bloc.genr YGADJ_? = 0
-call AddEquation(%blocs, "YGD net direct taxes and transfers;-;" _
-  + "dlog(1/(1/((YGD_?-YGADJ_?)/VV_?(-1)+0.3)-1)) = " _
+call AddEquation(%blocs, "YGR net direct taxes and transfers;-;" _
+  + "dlog(YGR_?/VV_?(-1)) = " _
   + "error correction:" _
-    + "c*log(1/(1/((YGD_?(-1)-YGADJ_?(-1))" _
-    + "/VV_?(-2)+0.3)-1));" _
+    + "c*log(YGR_?(-1)/VV_?(-1));" _
   + "outstanding debt:c*log(LG_?(-1)/VV_?(-1));" _
-  + "lagged income:c*log(Y_?(-1));" _
+  + "GDP growth:c*dlog(VV_?)")
+
+call AddEquation(%blocs, "YGTI transfers and interest;-;" _
+  + "dlog(YGTI_?/VV_?(-1)) = " _
+  + "error correction:c*log(YGTI_?(-1)/VV_?(-1));" _
+  + "outstanding debt:c*log(LG_?(-1)/VV_?(-1));" _
   + "GDP growth:c*dlog(VV_?);" _
-  + "change in unemployment:c*d(NU_?/NL_?);" _
-  + "lagged net indirect taxes:c*log(1+rtx_?(-1)/100)")
+  + "change in unemployment:c*d(NU_?/NL_?)")
 
-'--- rejected
-'  + "debt interest:" _
-'      +  "c*irm_?(-1)*LG_?(-1)/(100*VV_?(-1))")
 
-'--- external grant financing G
-'    with no impact on NLG
-smpl %start %end
-p_bloc.genr NLGADJ_? = 0
-
-call AddEquation(%blocs, "G government spending;4;" _
-  + "dlog(G_?-NLGADJ_?) = " _
-  + "error correction:c*log(G_?(-1)-NLGADJ_?(-1));" _
+call AddEquation(%blocs, "G government services;4;" _
+  + "dlog(G_?) = " _
+  + "error correction:c*log(G_?(-1));" _
   + "increase in government income:c*d(YG_?)/VV_?(-1);" _
   + "government income:c*YG_?(-1)/VV_?(-1);" _
   + "population:c*log(N_?(-1));" _
@@ -386,7 +386,7 @@ call AddEquation(%blocs, "is short-term interest rate;R(12);" _
   + "capacity utilisation:c*log(V_?/VT_?)")
 
 call AddEquation(%blocs, "im bond rate;-;" _
-  + "log(im_?/100) = " _
+  + "log(0.01+im_?/100) = " _
   + "short-term rate:c*log(0.02+is_?(-1)/100);" _
   + "rate of change in short-term rate:c*dlog(0.02+is_?/100);" _
   + "inflation:c*log(0.3+pvi_?(-1)/100);" _
@@ -402,11 +402,12 @@ call AddEquation(%blocs, _
  "IADI$ direct investment outflow;;" _
   + "d(IADI$_?)/VV$_?(-1) = " _
   + "error correction:c*IADI$_?(-1)/VV$_?(-1);" _
-  + "direct investment stock:c*ADI$_?(-1)/VV$_?(-1);" _
-  + "exports:c*X$_?(-1)/VV$_?(-1);" _
-  + "increase in exports:c*d(X$_?)/VV$_?(-1);" _
-  + "world GDP growth:c*dlog(VV_W);" _
-  + "real exchange rate:c*rx_?(-1)")
+  + "manufactures trade balance:" _
+    + "c*(XM$_?(-1)-MM$_?(-1))/VV$_?(-1);" _
+  + "world GDP growth:c*dlog(VV_W)")
+
+'  + "direct investment liabilities:" _
+'    + "c*LDI$_?(-1)/VV$_?(-1)")
 
 copy LDI$_* LDI$U_*
 call AddEquation(%blocs, _
@@ -452,11 +453,12 @@ call AddEquation(%blocs, _
 
 '--- other assets and liabilities
 call AddEquation(%blocs, _
- "NOI$ covered other asset position;;" _
+ "NOI$ covered position on other assets;;" _
   + "d(NOI$_?)/VV$_?(-1) = " _
-  + "error correction:c*NOI$_?(-1)/VV$_?(-1);" _
-  + "wealth:c*log(WP_?(-1)/VV_?(-1));" _
-  + "export revenue:c*d(X$_?)/VV$_?(-1)")
+  + "trade:c*(X$_?(-1)+M$_?(-1))/VV$_?(-1);" _
+  + "trade growth:c*d(X$_?+M$_?)/VV$_?(-1);" _
+  + "real revaluation:c*dlog(rx_?);" _
+  + "real GDP growth:c*dlog(VV_?)")
   
 call AddEquation(%blocs, _
  "HAOI$ holding gains on other assets;;" _
@@ -470,13 +472,18 @@ call AddEquation(%blocs, _
   + "revaluation:c*dlog(rx_?/ph_w)*LOI$_?(-1)/VV$_?(-1)")
 
 '--- upper bound equal to 200% of national income
-call AddEquation(%blocs, "R$ exchange reserves;-;" _
+call AddEquation(%blocs, "R$ exchange reserves;;" _
   + "-dlog(2/(R$_?/(VV$_?(-1)))-1) = " _
-  + "holding gain:c*HR$_?/VV$_?(-1);" _
+  + "error correction:" _
+    + "c*(-log(2/(R$_?(-1)/(VV$_?(-2)))-1));" _
+  + "non-reserve assets:c*AOI$_?/VV$_?(-1);" _
   + "current account:c*CA$_?/VV$_?(-1);" _
-  + "lagged c/a:c*CA$_?(-1)/VV$_?(-1)")
+  + "lagged current account:" _
+    + "c*CA$_?(-1)/VV$_?(-1);" _
+  + "real revaluation:c*dlog(rx_?)")
   
-call AddEquation(%blocs, "HR$ reserve revaluation;1;" _
+call AddEquation(%blocs, _
+  "HR$ holding gains on reserves;1;" _
   + "HR$_?/VV$_?(-1) = " _
   + "global dollar inflation:c*dlog(ph_w)*R$_?(-1)/VV$_?(-1)")
 
@@ -516,14 +523,10 @@ call AddEquation(%blocs, "pvi cost inflation;1;" _
 '========= CURRENT ACCOUNT
 call Bound(%tlBound, "NIT$:-0.1 MM0 pmm0 XA$ XE$ ex")
 
-smpl %start %end
-p_bloc.genr BITADJ$_? = 0
-
 copy BIT$_* BIT$U_*
 call AddEquation(%blocs, "BIT$U net income and transfers;-;" _
-  + "(BIT$U_?-BIT$_?(-1)-d(BITADJ$_?))/VV$_?(-1) = " _
-  + "error correction:" _
-    + "c*(BIT$_?(-1)-BITADJ$_?(-1))/VV$_?(-1);" _
+  + "(BIT$U_?-BIT$_?(-1))/VV$_?(-1) = " _
+  + "error correction:c*BIT$_?(-1)/VV$_?(-1);" _
   + "external position:c*im_us*NX$_?(-1)/(100*VV$_?(-1));" _
   + "change in external position:c*d(NX$_?)/VV$_?(-1)")
 

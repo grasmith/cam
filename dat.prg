@@ -1,6 +1,6 @@
 'PROGRAM: dat.prg  Copyright 2012,2015 Alphametrics Co.,Ltd.
 '
-' CAM version 6.0 FESSUD variant
+' CAM version 6.1 FESSUD variant
 '
 ' data preparation
 '
@@ -10,7 +10,7 @@
 '
 ' the program writes the workfile DAT.wf1
 '
-' updated: FC 01/04/2015
+' updated: FC 01/05/2015
 '
 '==================================================================
 ' OPTIONS
@@ -507,10 +507,11 @@ call LoadTable(t_Result, nResult, _
 )
 
 '============ 6: government expenditure, income and debt
-p_Bloc.genr NLG_? = CA_? - NLP_?       'net lending
-p_Bloc.genr YG_? = wd_AYG?/ph_?        'net income
-p_Bloc.genr G_? = YG_? - NLG_?         'expenditure on g&s
-p_Bloc.genr YGD_? = YG_? - VVTX_?    'direct taxes less transfers
+p_Bloc.genr YGR_? = wd_ARG?/ph_?     'net income
+p_Bloc.genr NLG_? = CA_? - NLP_?     'net lending
+p_Bloc.genr YG_? = wd_AYG?/ph_?      'net income
+p_Bloc.genr YGTI_? = YGR_? - YG_?    'transfers & interest
+p_Bloc.genr G_? = YG_? - NLG_?       'expenditure on g&s
 p_Bloc.genr LG_? = wd_FGD?/ph_?      'government debt
 p_Bloc.genr LGF_? = wd_FGF?/ph_?     'government debt held by banks
 p_Bloc.genr LGO_? = LG_? - LGF_?     'other government debt
@@ -530,8 +531,9 @@ p_Bloc.genr ILG_? = ILGO_?+ILGF_?            'total acquisition of govt debt
 '--- group and world totals
 call LoadTable(t_Result, nResult, _
   "GW;" _
-  + "G_? YG_? YGD_? NLG_? LG_? LGF_? LGO_? AGF_? NGF_? " _
-  + "ILGO_? ILGF_? ILG_? NGI_?=@iif(AGF_?<LG_?,AGF_?,LG_?) " _
+  + "YGR_? YGTI_? YG_? G_? NLG_? LG_? LGF_? LGO_? " _
+  + "AGF_? NGF_? ILGO_? ILGF_? ILG_? " _
+  + "NGI_?=@iif(AGF_?<LG_?,AGF_?,LG_?) " _
 )
 
 '============ 7: external position and banking system
@@ -949,7 +951,7 @@ scalar nTVar = 0
 
 call LoadTable(t_TVar, nTVar, _
   "Y;income:" _
-  + "G;govt expenditure:" _
+  + "G;govt services:" _
   + "ED;energy use:" _
   + "EP;energy production:" _
   + "CO2;CO2 emissions:" _
@@ -1048,8 +1050,9 @@ call LoadTable(t_Result, nResult, _
   + "XMV$_?=100*XM$_?/VV$_? " _
   + "XSV$_?=100*XS$_?/VV$_? " _
   + "XV$_?=100*X$_?/VV$_? " _
+  + "YGRV_?=100*YGR_?/VV_? " _
+  + "YGTIV_?=100*YGTI_?/VV_? " _
   + "YGV_?=100*YG_?/VV_? " _
-  + "YGDV_?=100*YGD_?/VV_? " _
   )
 call LoadTable(t_Result, nResult, _
   "BGW;" _
@@ -1077,6 +1080,7 @@ call LoadTable(t_Result, nResult, _
   + "VGA_?=100*(NEA_?/NE_?-VVA_?/VV_?)/(1-NEA_?/NE_?) " _
   + "NNE_?=100*(N_?/NE_?-1) " _
   + "GSS_?=100*(G_?/(N_?-0.5*NV_?))/VVN_? " _
+  + "GSTS_?=100*((G_?+YGTI_?)/(N_?-0.5*NV_?))/VVN_? " _
   + "rlx_?=100*LX$_?/(rx_?*DP_?) " _
   + "rr_?=100*R$_?/(rx_?*DP_?) " _
   + "rax_?=100*AX$_?/(rx_?*DP_?) " _
@@ -1314,7 +1318,7 @@ call LoadTable(t_WRep, nWRep, _
   + "CV_W,IPV_W,IVV_W,GV_W,XV$_W;" _
   + "Consumption,Private fixed capital formation," _
   + "Inventory accumulation," _
-  + "Government spending," _
+  + "Government services," _
   + "Exports of goods & services;GT;" _
   +"per cent of GDP;" _
 )
@@ -1364,7 +1368,7 @@ call LoadTable(t_WVar, nWVar, _
   "C_W;Consumption;$m ppp;0:" _
   + "IP_W;Private fixed capital formation;$m ppp;0:" _
   + "IV_W;Inventory accumulation;$m ppp;0:" _
-  + "G_W;Government spending;$m ppp;0:" _
+  + "G_W;Government services;$m ppp;0:" _
   + "V_W;GDP at ppp rates;$m ppp;0:" _
   + "V0_W;GDP at market rates;$m " + %base + ";0:" _
   + "VVT_W;Capacity utilisation;%;1:" _
@@ -1465,6 +1469,8 @@ call LoadTable(t_BRep, nBRep, _
   + "NNE_?;Economic dependency ratio;GT;%;auto:" _  
   + "GSS_?;Government service standard;" _
     + "GT;index;auto:" _  
+  + "GSTS_?;Government service & transfer standard;" _
+    + "GT;index;auto:" _  
   + "rlx_?;External liabilities as % dom deposits;GT;%;auto:" _  
   + "rr_?;Reserves as % dom deposits ;GT;%;auto:" _  
   + "rax_?;External assets as % dom deposits;GT;%;auto:" _  
@@ -1529,7 +1535,7 @@ call LoadTable(t_BRep, nBRep, _
   + "EPND_? EPNP_?;" _
     + "Non-carbon energy as a share of] demand and production" _
     + ";GT;%;0,100:" _
-  + "GV_?;Government expenditure as % of GDP;GT;%;auto:" _
+  + "GV_?;Government services as % of GDP;GT;%;auto:" _
   )
 
 call LoadTable(t_BRep, nBRep, _
@@ -1666,10 +1672,11 @@ call LoadTable(t_BRep, nBRep, _
     + "as % of GDP;G;%;auto:" _
   + "XSV$_? MSV$_?;Exports and imports [of services" _
     + " as % of GDP;GT;%;auto:" _
+  + "YGRV_? YGTIV_?;Government] revenue and transfers" _
+    + " [as % of GDP;GT;%;auto:" _
   + "YGV_?;Government income as % of GDP;GT;%;auto:" _
-  + "YGV_? GV_?;Government] income and expenditure" _
+  + "YGV_? GV_?;Government] income and services" _
     + " [as % of GDP;G;%;auto:" _
-  + "YGDV_?;Direct taxes less transfers as % of GDP;GT;%;-10,30:" _
   + "YN_?;Income per capita at ppp rates;GT;$ ppp;auto:" _
   + "YN$_?;Income per capita at market rates;GT;$ wpp;auto" _
 )
@@ -1700,8 +1707,9 @@ call LoadTable(t_BVar, nBVar, _
     + %base + ";0:" _
   + "YN;Income per capita;$ ppp;0:" _
   + "YN$;Income per capita at market rates;$ wpp;0:" _
+  + "YGR;Government revenue;$m ppp;0:" _
+  + "YGTI;Government transfers and interest;$m ppp;0:" _
   + "YG;Government income;$m ppp;0:" _
-  + "YGD;Direct taxes less transfers;$m ppp;0:" _
   + "G;Government expenditure on goods & services;$m ppp;0:" _
   + "NLG;Government net lending;$m ppp;0:" _
   + "IAG;Government net acquisition of assets;$m ppp;0:" _
@@ -1808,7 +1816,7 @@ call LoadTable(t_BVar, nBVar, _
   + "_H;Domestic spending in current $;$m;0:" _
   + "_C;Private consumption in current $;$m;0:" _
   + "_IPT;Private investment in current $;$m;0:" _
-  + "_G;Government spending in current $;$m;0:" _
+  + "_G;Government services in current $;$m;0:" _
   + "_NLP;Private net lending in current $;$m;0:" _
   + "_NLG;Government net lending in current $;$m;0:" _
   + "_LG;Government debt in current $;$m;0:" _

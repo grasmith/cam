@@ -1,3 +1,45 @@
+CAM 6.1 5 June 2015
+1. Presentation reports using adjust bloc groupings
+set.prg  changed bloc groupings
+resINCN.prg  presentation charts and tables (documented
+             in the file)
+
+2. Updated historical data
+WD.xls updated from WD81 database
+
+3. Zero bond rate
+est.prg  adjust to allow for zero bond rates
+
+4. Adjusted baseline
+sol0.prg  increase India's long-term growth rate and
+          reduce China's rate.
+
+5. New scenarios
+sol4  India: sustaibale growth with FDI
+sol5  China: new global financial centre ?
+
+CAM 6.1 6 May 2015
+1. Government revenue and transfers
+The model has been extended to show government revenue on a gross basis (YGR) from which expenditure on transfers, subsidies and interest (YGTI) is deducted to obtain disposable income (YG). A new standard is provided for measuring government expenditure (GSTS) including transfers against GDP and a weighted measure of population.
+
+One additional variable (ARG) must be loaded from the WD database.
+
+Consequent changes to programs:
+ - set.prg  no of series to be loaded
+ - dat.prg  redefinition of variables
+ - est.prg  equations for YGR and YGTI
+            modified equations for labour force
+            and unemployment to pick up
+            the impact of government services
+            and transfers
+ - sol0.prg additional tuning to smooth the
+            European boom predicted for 2016-17
+            due to real devaluation of the euro
+
+2. Scenario to illustrate use of new variables
+A 'sustainable development' scenario for Europe (sol3.prg) illustrates possible use of new variables in CAM 6 (government revenue and transfers, direct investment, portfolio investment and other external assets and liabilities) to illustrate a policy setup in which the financial sector and cross-border investments are controlled to support the achievement of real economy objectives.
+
+-------------------------------------------------------------------
 CAM 6.0 22 April 2015
 
 1. Historical database WD8.1

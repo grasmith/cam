@@ -78,8 +78,6 @@ rename m_ds {%gm}
 {%gm}.scenario "actuals"
 %alias = ""
 
-'--- Note: if add factors are not defined at the bottom level
-' they are lost when the workfile is saved and reloaded
 m_wm.addassign @stochastic
 '--- set historical add factors
 smpl %start %latest
@@ -180,7 +178,8 @@ for !i = 1 to nBloc
   call Link("mu_"+%b,"IP_"+%b,-1)
   call Link("SP_"+%b,"IP_"+%b,-0.8)
   call Link("G_"+%b,"IP_"+%b,0.25)
-  call Link("YGD_"+%b,"IP_"+%b,-0.1)
+  call Link("YGR_"+%b,"IP_"+%b,-0.1)
+  call Link("YGTI_"+%b,"IP_"+%b,+0.1)
   call Link("pkp_"+%b,"IP_"+%b,0.5)
   '--- adjust US domestic inflation to fix dollar GDP
   if %b = "us" then
@@ -235,8 +234,8 @@ next
 %graphcomp = "No"
 
 call pLog("align with series loaded from ALIGN.XLS")
-call pCheckSolveReport({%gm}, @str(@val(%latest)-3), %latest, _
-  %align, "", 5)
+call pCheckSolveReport({%gm}, @str(@val(%latest)-3), _
+ %latest, %align, "", 5)
 
 '--- project adjustments with decay to %end
 smpl %align+1 %end

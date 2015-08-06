@@ -1,6 +1,6 @@
 'PROGRAM: sol2.prg    Copyright (C) 2013,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 6.0   FESSUD variant
+' CAM Version 6.1   FESSUD variant
 '
 ' EU structural policies
 '
@@ -18,8 +18,8 @@ subroutine sol2
 
 %actual = "2015"
 
-%graphs = "No"
-%graphcomp = "No"
+%graphs = "Yes"
+%graphcomp = "Yes"
 %markets = "No"
 %tables = "No"
 %analysis = "No"
@@ -38,7 +38,7 @@ call pLog("SOL1 PROGRAM v0904")
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)
 t_Settings(3,2) = "2"
-t_Settings(4,2) = "Structural policies"
+t_Settings(4,2) = "EU structural policies"
 
 call pCreateScenario(%gm, %alias)
 

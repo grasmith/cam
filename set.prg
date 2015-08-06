@@ -1,13 +1,13 @@
 'PROGRAM: set.prg          Copyright (C) 2015 Alphametrics Co. Ltd.
 '
-' CAM Version 6.0 FESSUD variant
+' CAM Version 6.1 FESSUD variant
 '
 ' settings
 '
 ' this program fragment is included in all executable programs
 ' it initialises the system and provides common settings
 '
-' updated: FC 17/04/2015
+' updated: FC 8/05/2015
 '
 '=======================================================
 
@@ -26,12 +26,12 @@ include "zimpact"
 %sysTitle = "CAM 6.0 with FESSUD blocs"
 
 '--- data source (historical series)
-!nSeries = 2940
+!nSeries = 2963
 
 '--- default simulation horizon
 %predict = "2030"
 '--- start year for simulation charts and reports
-%repstart = "2000"
+%repstart = "1980"
 '--- columns in simulation tables
 %yrsol = "2000 2008 2010 2011 2012 2015 2020 2030"
 
@@ -65,8 +65,8 @@ include "zimpact"
   + "de;Germany:" _
   + "fr;France:" _
   + "uk;UK:" _
-  + "euc;Core eurozone:" _
-  + "eup;Eurozone periphery:" _
+  + "euc;Core Eurozone:" _
+  + "eup;Eurozone Periphery:" _
   + "oeu;Other Europe:" _
   + "us;USA:" _
   + "cn;China:" _
@@ -90,17 +90,20 @@ include "zimpact"
 '    the groups can overlap (a bloc can be in
 '    more than one group) 
 %groups = "" _
- + "BRICS; BRICS;" _
-    + "br ru in cn za:" _
+ + "IND; India;" _
+    + "in:" _
+ + "CHN; China;" _
+    + "cn:" _
+ + "OEE;Other East Asia;" _
+    + "oeh oea:" _
  + "EUR; Europe;" _
     + "de fr uk euc eup oeu:" _
+ + "USA;USA;" _
+    + "us:" _
+ + "OEX;Energy exporters;" _
+    + "ru oca nwa:" _
  + "ROW;Rest of world;" _
-    + "id tr us can oeh nwa acx oam oea osa oaf:" _
- + "OHI;Other high income;" _
-    + "us oeh can:" _
- + "OMI;Other middle income;" _
-    + "tr oca nwa acx oam:" _
- + "OLI;Other low income;" _
-    + "id oea osa oaf:"
+    + "can br za tr acx oam " _
+    + "id osa oaf:"
 
 '=======================================================

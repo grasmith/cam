@@ -1,6 +1,6 @@
 'PROGRAM: sol1.prg    Copyright (C) 2013,2014 Alphametrics Co. Ltd.
 '
-' CAM Version 6.0   FESSUD variant
+' CAM Version 6.1   FESSUD variant
 '
 ' EU investment boost
 '
@@ -18,8 +18,8 @@ subroutine sol1
 
 %actual = "2015"
 
-%graphs = "No"
-%graphcomp = "No"
+%graphs = "Yes"
+%graphcomp = "Yes"
 %markets = "No"
 %tables = "No"
 %analysis = "No"
