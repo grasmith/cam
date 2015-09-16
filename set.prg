@@ -7,7 +7,7 @@
 ' this program fragment is included in all executable programs
 ' it initialises the system and provides common settings
 '
-' updated: FC 15/04/2012
+' updated: NK 03/09/2015
 '
 '=======================================================
 
@@ -35,7 +35,7 @@ include "zimpact"
 %yrsol = "2000 2008 2010 2011 2012 2015 2020 2030"
 
 '--- data source (historical series)
-!nSeries = 1859
+!nSeries = 1862
 
 '--- bloc lists
 %blocs = "eun;North Europe:" _
@@ -70,12 +70,12 @@ include "zimpact"
 '--- history and solution periods
 %start = "1970"               ' first year of historical data
 %base = "2005"                ' base year
-%latest = "2010"              ' latest historical data
-%align = "2012"               ' alignment horizon
+%latest = "2013"              ' latest historical data
+%align = "2015"               ' alignment horizon
 %end = "2030"                 ' end of workfile (max series length)
 
 '--- columns in history and alignment tables
 %yrdat = "1971 1980 1990 1995 2000 2005 2008 2009"
-%yrext = "1990 2000 2007 2008 2009 2010 2011 2012"
+%yrext = "1990 2000 2007 2008 2009 2010 2012 2013"
 
 '=======================================================

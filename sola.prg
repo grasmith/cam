@@ -22,7 +22,7 @@
 '
 ' Results are recorded as actuals
 '
-' updated: FC 15/04/2012
+' updated: NK 03/09/2015
 '
 '==================================================================
 ' OPTIONS
@@ -33,7 +33,7 @@ call sola
 subroutine sola
 
 '--- first year of alignment data in ALIGN.XLS
-%loadfrom = "2007"
+%loadfrom = "2010"
 
 '--- decay rate for add factors beyond the alignment horizon
 !vdecay = 0.6
@@ -92,18 +92,15 @@ model {%gm}
 '==================================================================
 ' DEFINITIONS
 '==================================================================
-
-smpl %latest+1 %align
-
-'--- reduced trend growth of carbon energy supply in US, Europe and China
-EPC_US_ins =  -0.005
+smpl %latest+1 %end
+'--- reduced trend growth of carbon energy supply in Europe and China
 EPC_EUW_ins = -0.01
 EPC_EUE_ins = -0.01
 EPC_UK_ins = -0.01
 EPC_EUN_ins = -0.03
 EPC_CN_ins = -0.02
 
-smpl %latest+1 %end
+ED_US_ins = 0.02
 
 '==================================================================
 ' LOAD TARGETS

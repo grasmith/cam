@@ -12,7 +12,7 @@
 ' you can get different types of estimation output by switching
 ' on the various options listed below
 '
-' updated: FC 25/06/2012
+' updated: NK 03/09/2015
 '
 '==================================================================
 ' OPTIONS
@@ -26,7 +26,7 @@ subroutine est
 %comparisons = "Yes"
 %prediction_graphs = "Yes"
 %startest = "1980"            ' first year for eqn estimation
-%endest = "2010"              ' last year for eqn estimation
+%endest = "2013"              ' last year for eqn estimation
 
 '--- "recent" intercept fitting for equations with option R
 %startfit = "1996"            ' first year for "recent" intercept fit
@@ -46,7 +46,7 @@ pageselect data
 delete gp_gr* sp_log*
 
 '--- update settings
-call pLog("EST PROGRAM v0625")
+call pLog("EST PROGRAM v1004")
 %wkfile = "EST"
 t_Settings(7,2) = %wkfile
 wfsave {%wkfile}
@@ -79,8 +79,8 @@ scalar nEq = 0
 
 '--- female and male activity rates using weighted population
 '    with a transform to set bounds
-scalar cafmax = 0.70
-scalar cafmin = 0.15
+scalar cafmax = 0.8
+scalar cafmin = 0.1
 p_Bloc.genr NEAF_? = log(1/((cafmax-cafmin) _
   /(NEF_?/(NWPF_?(-1)+NOPF_?(-1))-cafmin)-1))
 scalar cammax = 0.95
@@ -122,19 +122,18 @@ p_Bloc.genr YGADJ_? = 0
 smpl %start %latest
 
 call AddEquation(%blocs, "YG government income;-;" _
-  + "dlog(1/(((1/(YG_?-YGADJ_?))*0.4*Y_?(-1)-1)*0.4*Y_?(-1))) = " _
+  + "-dlog((1/(YG_?-YGADJ_?))*0.4*Y_?(-1)-1) = " _
   + "error correction:" _
-    + "c*log(1/(((1/(YG_?(-1)-YGADJ_?(-1)))" _
-      + "*0.4*Y_?(-2)-1)*0.4*Y_?(-2)));" _
-  + "outstanding debt:0.015*log(LG_?(-1)/Y_?(-1));" _
+    + "c*log((1/(YG_?(-1)-YGADJ_?(-1)))*0.4*Y_?(-2)-1);" _
   + "income growth:c*dlog(Y_?);" _
   + "lagged income growth:c*dlog(Y_?(-1));" _
+  + "outstanding debt:0.015*log(LG_?(-1)/Y_?(-1));" _
   + "debt interest:" _
       +  "-0.1*irm_?(-1)*LG_?(-1)/(100*Y_?(-1))")
 
 'NB: imposed debt and debt interest coefficients
 ' force income to increase if debt is high and make interest
-'  charges subtract from government's net income
+' charges subtract from government's net income
 
 call AddEquation(%blocs, "G government spending;-;" _
   + "dlog(G_?) = " _
@@ -225,7 +224,7 @@ call AddEquation(%blocs, "NFI covered bank lending;-;" _
 '--- ceiling; non-bank holdings must not exceed the total
 call AddEquation(%blocs, _
  "LGO non-bank holdings of govt debt;-;" _
-  + "dlog(1/(1/(LGO_?/LG_?)-1)) = " _
+  + "-dlog((1/(LGO_?)*LG_?)-1) = " _
   + "non-bank liquidity:c*dlog(DP_?(-1)/Y_?(-1))")
 
 'NB: LGO must be the first variable on the lhs
@@ -285,8 +284,8 @@ copy rx_* rxu_*
 call AddEquation(%blocs, "rxu real exchange rate;-;" _
   + "log(rxu_?/rx_?(-1)) = " _
   + "error correction:c*log(rx_?(-1));" _
-  + "current account:0.3*CA$_?(-1)/(NXI$_?(-1)+M$_?(-1));" _
-  + "external position:0.1*NX$_?(-1)/(rx_?(-1)*Y_?(-1));" _
+  + "current account:c*CA$_?(-1)/(NXI$_?(-1)+M$_?(-1));" _
+  + "external position:c*NX$_?(-1)/(rx_?(-1)*Y_?(-1));" _
   + "inflation:c*d(spvi_?(-1));" _
   + "global dollar inflation:c*dlog(ph_w)")
 
@@ -296,8 +295,8 @@ call AddEquation(%blocs, "rxu real exchange rate;-;" _
 '========= CAPACITY UTILISATION AND INFLATION
 
 call AddEquation(%blocs, "pvi cost inflation;-R;" _
-  + "dlog(0.04+pvi_?/100) = " _
-  + "error correction:c*log(0.04+pvi_?(-1)/100);" _
+  + "dlog(0.1+pvi_?/100) = " _
+  + "error correction:c*log(0.1+pvi_?(-1)/100);" _
   + "capacity utilisation:" _
     + "c*(1/(1.60-V_?/VT_?)+1/(1.60-V_?(-1)/VT_?(-1)));" _
   + "real exchange rate:c*dlog(rx_?);" _
@@ -314,8 +313,11 @@ copy BIT$_* BIT$U_*
 call AddEquation(%blocs, "BIT$U net income and transfers;-;" _
   + "(BIT$U_?-BIT$_?(-1)-d(BITADJ$_?))/Y$_?(-1) = " _
   + "error correction:c*(BIT$_?(-1)-BITADJ$_?(-1))/Y$_?(-1);" _
-  + "external position:c*im_us*NX$_?(-1)/(100*Y$_?(-1));" _
+  + "external position:0.05*im_us(-1)*NX$_?(-1)/(100*Y$_?(-1));" _
   + "change in external position:c*d(NX$_?)/Y$_?(-1)")
+
+'--- imposed coefficient for long-run impact of US bond rate
+'    and external position (assumes 0.08 error correction)
 
 copy NIT$_* NIT$U_*
 call AddEquation(%blocs, "NIT$U covered income and transfers;-;" _
@@ -381,7 +383,7 @@ call AddEquation(%blocs, _
   + "error correction:c*log((1+XE0_?(-1))/(0.01+EX_?(-1)))")
 
 call AddEquation(%blocs, "ME$ imports of energy products; 1;" _
-  + "dlog(ME$_?/ME0_?)= " _
+  + "dlog(ME$_?/ME0_?) = " _
   + "world prices:c*dlog(pe_w)")
 
 copy XE$_* XE$U_*
@@ -469,7 +471,7 @@ call AddEquation(%blocs, "MS$ imports of services; 1;" _
   + "net imports (if positive):" _
                + "c*d(@iif(BS$U_?>0,0,-BS$U_?))/V_?(-1);" _
   + "real exchange rate appreciation:c*dlog(rx_?);" _
-  + "increase in imports of raw materials:c*d(MA$_?)/V_?(-1);" _
+  + "increase in exports of raw materials:c*d(XA$_?)/V_?(-1);" _
   + "increase in exports of energy:c*d(XE$_?)/V_?(-1);" _
   + "increase in imports of manufactures:c*d(MM$_?)/V_?(-1)")
 
@@ -741,15 +743,15 @@ next
 smpl %start %end
 series pa_w_ins = 0
 smpl %startest %endest
-%lhs = "dlog(pa_w)-pa_w_ins"
-equation eq_pa_w.ls {%lhs} _
-  log(pa_w(-1)) log(V_W(-1)) dlog(V_W) c ar(1)
+equation eq_pa_w.ls dlog(pa_w)-pa_w_ins _
+  log(pa_w(-1)) dlog(V_W) log(V_W(-1)) c ar(1)
 
 '--- reestimate intercept and ar
 'smpl %startfit %endest
 '%s = @str(eq_pa_w.@coefs(1)) + "*log(pa_w(-1))" _
-'   + "+" + @str(eq_pa_w.@coefs(2)) + "*log(V_W(-1))"
-'%s = %lhs + "-(" + %s + ") c ar(1)"
+'   + "+" + @str(eq_pa_w.@coefs(2)) + "*dlog(V_W)" _
+'   + "+" + @str(eq_pa_w.@coefs(3)) + "*log(V_W(-1))"
+'%s = "dlog(pa_w)-pa_w_ins-(" + %s + ") c ar(1)"
 'eq_pa_w.ls {%s}
 
 '--- market shares for exports of manufactures
@@ -1383,3 +1385,4 @@ wend
 iSRow = iSRow + 10 + 2*!nCoef
 
 endsub
+

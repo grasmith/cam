@@ -1,3 +1,47 @@
+CAM 4.6 Updated to match database 8.2, Sep 2015
+
+Release notes from Naret:
+
+ After use WD82 database and updated align.xls(WEOApril2015) .
+Some change necessary in order to estimation equations.
+1. Assume scalar values for female activity rates using weighted population with a transform to set
++bounds max and min value due to improvement equation.
+scalar cafmax = 0.8(from .70)
+scalar cafmin = 0.10(from 0.15)
+because China’s female activity rates more than 0.7 and  North Africa’s female activity rate less than
++0.15.
+
+2. equation PVI
+Increased constant prices from 0.04+pvi_?/100 to 0.1+pvi_?/100
+because of Iraq and Kuwait had a huge deflation in 2009 data calculated from UNSD data.
+
+3. equation rxu
+Took out fixed coefficient  then estimated coefficient  by historical data.
+Original CAM4.6
+call AddEquation(%blocs, "rxu real exchange rate;-;" _
+  + "log(rxu_?/rx_?(-1)) = " _
+  + "error correction:c*log(rx_?(-1));" _
+  + "current account:0.3*CA$_?(-1)/(NXI$_?(-1)+M$_?(-1));" _
+  + "external position:0.1*NX$_?(-1)/(rx_?(-1)*Y_?(-1));" _
+  + "inflation:c*d(spvi_?(-1));" _
+  + "global dollar inflation:c*dlog(ph_w)")
+
+New update
+call AddEquation(%blocs, "rxu real exchange rate;-;" _
+  + "log(rxu_?/rx_?(-1)) = " _
+  + "error correction:c*log(rx_?(-1));" _
+  + "current account:c*CA$_?(-1)/(NXI$_?(-1)+M$_?(-1));" _
+  + "external position:c*NX$_?(-1)/(rx_?(-1)*Y_?(-1));" _
+  + "inflation:c*d(spvi_?(-1));" _
+  + "global dollar inflation:c*dlog(ph_w)")
+
+4. Oil prices trend ?
+If you are not satisfy with the projection of the oil prices, you can adjust in sola.prg to reduce trend
++growth of carbon energy supply.
+
+
+
+
 CAM 4.6 AUGUR NOTES 20 September 2012
 
 Scenario renumbering
