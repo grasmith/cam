@@ -1,6 +1,6 @@
 'PROGRAM: zlibr.prg  Copyright (C) 2012,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 6.0
+' CAM Version 6.1a
 '
 ' library routines for scenario rules
 '
@@ -8,7 +8,7 @@
 ' beginning with lib_ are reserved and should not be used
 ' elsewhere.
 '
-' updated: FC 23/03/2015
+' updated: FC 27/01/2016
 '
 '---------------------------------------------------------------
 '
@@ -20,8 +20,8 @@
 ' CheckTransform(tEq, nEq, %Var, %Trsf)
 ' ClearShockGroup(tRule, nRule, iRule, %Year)
 ' DropRules(%tlIns)
-' ExtendAdd(vDecay)
-' ExtendIns(vDecay)
+' ExtendAdd(vDecay, Base)
+' ExtendIns(vDecay, Base)
 ' Floor(%Ins, %Expr, %Value, vSens, vPCT)
 ' Fix(%Ins, %Mode, %Value)
 ' InsToAddFactors(m, tRule, nRule, tBloc, nBloc)
@@ -519,26 +519,22 @@ while %t <> ""
 wend
 endsub
 
-subroutine ExtendAdd(scalar p_vDecay)
+subroutine ExtendAdd(scalar p_vDecay, string %p_Base)
 '==============================================================
-'Extend alignment add factors beyond alignment horizon
+'Extend add factors
 '
 ' Call: p_vDecay   decay rate
+'       p_Base     base year
 '
 ' Ret:
 '
 '---------------------------------------------------------------
-
 if p_vDecay = 0 then return endif
 
 '--- make a list of all add factors
-smpl %align %align
 group lib_gp *_a
 freeze(lib_t) lib_gp
 delete lib_gp
-
-'--- extrapolation period
-smpl %align+1 %end
 
 '--- for each add factor
 !lib_i = 1
@@ -546,20 +542,21 @@ while 1
   !lib_i = !lib_i + 1
   %lib_s = lib_t(1, !lib_i)
   if %lib_s = "" then exitloop endif
-  !lib_v = @elem({%lib_s}, %align)
+  !lib_v = @elem({%lib_s}, %p_Base)
   if !lib_v <> 0 then
-    {%lib_s} = {%lib_s}(-1)*p_vdecay
+    {%lib_s} = {%lib_s}(-1)*p_vDecay
   endif
 wend
 
 delete lib_t
 endsub
 
-subroutine ExtendIns(scalar p_vDecay)
+subroutine ExtendIns(scalar p_vDecay, string %p_Base)
 '==============================================================
-'Extend alignment adjustments beyond alignment horizon
+'Extend behavioural adjustments
 '
 ' Call: p_vDecay   decay rate
+'       p_Base     base year
 '
 ' Ret:
 '
@@ -568,13 +565,9 @@ subroutine ExtendIns(scalar p_vDecay)
 if p_vDecay = 0 then return endif
 
 '--- make a list of all ins variables
-smpl %align %align
 group lib_gp *_ins
 freeze(lib_t) lib_gp
 delete lib_gp
-
-'--- extrapolation period
-smpl %align+1 %end  
 
 '--- for each ins variable
 !lib_i = 1
@@ -582,9 +575,9 @@ while 1
   !lib_i = !lib_i + 1
   %lib_s = lib_t(1, !lib_i)
   if %lib_s = "" then exitloop endif
-  !lib_v = @elem({%lib_s}, %align)
+  !lib_v = @elem({%lib_s}, %p_Base)
   if !lib_v <> 0 then
-    {%lib_s} = {%lib_s}(-1)*p_vdecay
+    {%lib_s} = {%lib_s}(-1)*p_vDecay
   endif
 wend
 

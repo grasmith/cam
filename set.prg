@@ -1,13 +1,13 @@
 'PROGRAM: set.prg          Copyright (C) 2015 Alphametrics Co. Ltd.
 '
-' CAM Version 6.1 FESSUD variant
+' CAM Version 6.1a FESSUD variant
 '
 ' settings
 '
 ' this program fragment is included in all executable programs
 ' it initialises the system and provides common settings
 '
-' updated: FC 8/05/2015
+' updated: FC 27/01/2016
 '
 '=======================================================
 
@@ -43,12 +43,12 @@ include "zimpact"
 
 '--- columns in history and alignment tables
 %yrdat = "2000 2007 2009 2010 2011 2012 2013"
-%yrext = "2000 2007 2009 2012 2013 2014 2015"
+%yrext = "2000 2007 2009 2012 2014 2015 2016"
 
 '--- graph coverage
 '    B blocs, F first blocs, O other blocs,
 '    G groups, W world
-%repgeo = "FOG"
+%repgeo = "B"
 %subgraphs = "No"
 '--- tables with data from graphs to be generated
 '    on the tables page with same names as the graphs

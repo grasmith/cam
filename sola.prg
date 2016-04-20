@@ -1,6 +1,6 @@
-'PROGRAM: sola.prg       Copyright (C) 2012,2015 Alphametrics Co. Ltd.
+ 'PROGRAM: sola.prg       Copyright (C) 2012,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 6.0  FESSUD variant
+' CAM Version 6.1a  FESSUD variant
 '
 ' Aligns the model with estimates for
 ' - the world oil price (UNCTAD)
@@ -22,7 +22,7 @@
 '
 ' Results are recorded as actuals
 '
-' updated: FC 24/04/2015
+' updated: FC 27/01/2016
 '
 '==================================================================
 ' OPTIONS
@@ -33,7 +33,7 @@ call sola
 subroutine sola
 
 '--- alignment horizon
-%align = "2015"
+%align = "2016"
 
 '--- decay rate for add factors beyond the alignment horizon
 !vdecay = 0.6
@@ -52,7 +52,7 @@ mode quiet
 call CreateModelFile("EST", %wkfile) 
 
 '--- update settings
-call pLog("SOLA PROGRAM v2404")
+call pLog("SOLA PROGRAM v2701")
 t_Settings(3,2) = ""
 t_Settings(4,2) = "actuals"
 
@@ -82,6 +82,10 @@ m_wm.addassign @stochastic
 '--- set historical add factors
 smpl %start %latest
 m_wm.addinit(v=n) @stochastic
+smpl %latest+1 %end
+call pLog("testing " + %latest)
+call pLog("testing " + @str(!vdecay))
+call ExtendAdd(!vdecay, %latest)
 
 '==================================================================
 ' DEFINITIONS
@@ -96,6 +100,10 @@ EPC_UK_a = -0.01
 EPC_OEU_a = -0.01
 EPC_CN_a = -0.02
 
+'--- increased oil and gas supply in US and Canada
+EPC_US_a = 0.02
+EPC_CAN_a = 0.01
+
 '--- nuclear energy supply
 '    reduced trends in main countries
 EPN_US_a = -0.02
@@ -103,8 +111,20 @@ EPN_FR_a = -0.03
 EPN_CN_a = -0.02
 EPN_RU_a = -0.03
 EPN_UK_a = -0.02
-'    Japan: 2012 closedown and gradual, partial restart
+'    Japan: gradual restart
 EPN_OEH_a = 0
+
+'--- migration from North Africa and West Asia
+NIMU_NWA_a = 0
+NIMU_NWA_a.fill(s) 0, -0.05
+NIMU_DE_a = -0.25*NIMU_NWA_a
+NIMU_FR_a = -0.1*NIMU_NWA_a
+NIMU_EUC_a = -0.08*NIMU_NWA_a
+NIMU_EUP_a = -0.08*NIMU_NWA_a
+NIMU_UK_a = -0.02*NIMU_NWA_a
+NIMU_OEU_a = -0.05*NIMU_NWA_a
+NIMU_RU_a = -0.03*NIMU_NWA_a
+NIMU_TR_a = -0.6*NIMU_NWA_a
 
 smpl %latest+1 %end
 
@@ -117,12 +137,12 @@ smpl 2009 %align
 read(t=xls,s=UNCTAD,t,f6) align.xls 1
 '--- WEO bloc data
 smpl 2009 %align
-!n = 28*nBloc
+!n = 32*nBloc
 read(t=xls,s=WEO bloc data,t,n4) align.xls !n
 delete ser*
 '--- ILO bloc data
 smpl 2009 %align
-!n = 16*nBloc
+!n = 18*nBloc
 read(t=xls,s=ILO bloc data,t,l4) align.xls !n
 delete ser*
 
@@ -142,7 +162,7 @@ p_Bloc.genr _CA_tar_? = 1000*BCA_E_? _
     + @elem(_CA_?,%latest) - 1000*@elem(BCA_E_?,%latest)
 '--- nominal exchange rate
 p_Bloc.genr rxna_tar_? = 100*(APT_E_?*APT0_E_?(-1) _
-                              /(APT_E_?(-1)*WNGR_E_?)-1)
+                        /(APT_E_?(-1)*WNGR_E_?)-1)
 '--- employment and unemployment
 p_Bloc.genr NU_? = U_I_?*@elem(NU_?,%latest) _
                         /@elem(U_I_?,%latest)
@@ -239,7 +259,8 @@ call pCheckSolveReport({%gm}, @str(@val(%latest)-3), _
 
 '--- project adjustments with decay to %end
 smpl %align+1 %end
-call ExtendIns(!vdecay)
+call ExtendIns(!vdecay, %align)
+
 '--- add ins values to add factors and zero ins
 smpl %latest+1 %end
 call InsToAddFactors(m_wm, t_Rule, nRule, t_Bloc, nBloc)

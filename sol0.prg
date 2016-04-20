@@ -1,6 +1,6 @@
 'PROGRAM: sol0.prg       Copyright (C) 2012,2015 Alphametrics Co. Ltd.
 '
-' CAM Version 6.1 FESSUD variant
+' CAM Version 6.1a FESSUD variant
 '
 ' Baseline projection (main version)
 '
@@ -11,7 +11,7 @@
 '
 ' The program reads SOL0p.wf1 and creates SOL0.wf1
 '
-' updated: FC 01/05/2015
+' updated: FC 27/01/2015
 '
 ' Note: adjustments are made using add factors (_a).
 '
@@ -23,8 +23,8 @@ call sol0
 '------------------------------------------------------------------
 subroutine sol0
 
-%graphs = "No"
-%graphcomp = "No"
+%graphs = "Yes"
+%graphcomp = "Yes"
 %markets = "No"
 %tables = "No"
 %analysis = "No"
@@ -41,7 +41,7 @@ call CreateModelFile("SOL0P", %wkfile)
 delete m_wm0p t_Rule* nRule*
 
 '--- update settings
-call pLog("SOL0 PROGRAM v0105")
+call pLog("SOL0 PROGRAM v2701")
 t_Settings(5,2) = t_Settings(3,2)
 t_Settings(6,2) = t_Settings(4,2)
 t_Settings(3,2) = "0"
@@ -70,6 +70,7 @@ if @val(%latest) < @val(%actual) then
   series rxna_tar_euc = rxna_euc-rxna_de
   series rxna_tar_fr = rxna_fr-rxna_de
 endif
+
 '--- targets and adjustments beyond the alignment horizon
 smpl %actual+1 %end
 '--- eurozone exchange rates
@@ -77,29 +78,20 @@ rxna_tar_eup = 0
 rxna_tar_euc = 0
 rxna_tar_fr = 0
 
-'--- reduce 2016-17 boom in Europe
-series IPADJ = 0
-IPADJ.fill(s) -0.025,-0.03,-0.025,-0.02,-0.015,-0.01,-.005
-IP_DE_a = IP_DE_a + IPADJ
-IP_FR_a = IP_FR_a + 0.8*IPADJ
-IP_EUC_a = IP_EUC_a + IPADJ
-IP_EUP_a = IP_EUP_a + 0.5*IPADJ
-SP_DE_a = SP_DE_a - 0.5*IPADJ
-SP_FR_a = SP_FR_a - 0.4*IPADJ
-SP_EUC_a = SP_EUC_a - 0.5*IPADJ
-SP_EUP_a = SP_EUP_a - 0.25*IPADJ
+'--- limit eurozone price fall
+series trend_adj = (@trend()-46)/14
+pvi_FR_a = pvi_FR_a + 0.02*trend_adj
+pvi_EUC_a = pvi_EUC_a + 0.01*trend_adj
+pvi_EUP_a = pvi_EUP_a + 0.02*trend_adj
 
-'--- CN fiscal policy
+'--- CN credit problems
+NFI_CN_a = NFI_CN_a - 0.1
+IP_CN_a = IP_CN_a - 0.02
 YGR_CN_a = YGR_CN_a + 0.05
 
-'--- IN and CN long-term growth policies
+'--- IN growth policies
 IP_IN_a = IP_IN_a + 0.02
 SP_IN_a = SP_IN_a - 0.01
-IP_CN_a = IP_CN_a - 0.02
-
-'--- increased oil and gas supply in US and Canada
-EPC_US_a = 0.03
-EPC_CAN_a = 0.02
 
 call Limit(95, "ALL")
 '==================================================================
